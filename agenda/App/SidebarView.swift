@@ -22,6 +22,8 @@ struct SidebarView: View {
                     .tag(SidebarSelection.calendar)
                 Label("Habits", systemImage: "flame")
                     .tag(SidebarSelection.habits)
+                Label("Notes", systemImage: "note.text")
+                    .tag(SidebarSelection.notes)
             }
 
             Section("Tasks") {

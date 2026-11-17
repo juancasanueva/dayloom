@@ -106,4 +106,18 @@ struct WeekCalendarModelTests {
         }
         #expect(source.entries.count == 2)
     }
+
+    @Test func eventsOnADayIgnoreTheVisibleWeek() {
+        let (model, _) = makeModel(access: .granted)
+
+        #expect(model.events(on: TestClock.date(2026, 11, 25, 15)).map(\.id) == ["Next week"])
+        #expect(model.events(on: TestClock.date(2026, 11, 24)).isEmpty)
+        #expect(model.events.isEmpty) // The visible week isn't loaded or changed.
+    }
+
+    @Test func eventsOnADayNeedAccess() {
+        let (model, _) = makeModel(access: .denied)
+
+        #expect(model.events(on: TestClock.date(2026, 11, 18)).isEmpty)
+    }
 }
