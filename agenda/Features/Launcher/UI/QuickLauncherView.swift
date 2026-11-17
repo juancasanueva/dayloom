@@ -23,7 +23,7 @@ struct QuickLauncherView: View {
         let rows = LauncherResults.rows(for: input, query: text, tasks: allTasks, calendarAccess: calendarModel.access)
 
         ZStack(alignment: .top) {
-            Color.black.opacity(0.2)
+            Color.black.opacity(0.18)
                 .ignoresSafeArea()
                 .onTapGesture(perform: close)
                 .accessibilityHidden(true)
@@ -45,31 +45,33 @@ struct QuickLauncherView: View {
 
             if input.hasDateOrTime || input.duration != nil || input.priority != .none || !input.tagNames.isEmpty {
                 ParsedTokensRow(input: input, previewTags: previewTags(for: input.tagNames))
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 10)
             }
 
             if !rows.isEmpty {
-                Divider()
                 results(rows)
             }
 
             if let errorMessage {
-                Divider()
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                     .font(.callout)
                     .foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
+                    .padding(10)
+                    .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: Theme.cardRadius))
+                    .padding([.horizontal, .bottom], 10)
             }
         }
         .frame(maxWidth: 580)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        // A floating paper card: the panel surface, a hairline edge and a soft, wide shadow.
+        .background(Theme.panel, in: RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(.separator)
+            RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous)
+                .strokeBorder(Theme.hairline)
         }
-        .shadow(color: .black.opacity(0.25), radius: 24, y: 10)
+        .shadow(color: .black.opacity(0.18), radius: 30, y: 14)
+        .shadow(color: .black.opacity(0.08), radius: 4, y: 1)
     }
 
     private func searchField(rows: [LauncherRow]) -> some View {
@@ -77,6 +79,7 @@ struct QuickLauncherView: View {
             Image(systemName: "magnifyingglass")
                 .font(.title3)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             TextField("Add a task, plan an event, or search", text: $text)
                 .textFieldStyle(.plain)
                 .font(.title3)
@@ -98,13 +101,16 @@ struct QuickLauncherView: View {
                     return .handled
                 }
         }
-        .padding(16)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius + 2, style: .continuous))
+        .padding(10)
     }
 
     private func results(_ rows: [LauncherRow]) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: 2) {
+                VStack(spacing: 3) {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                         Button {
                             selectedIndex = index
@@ -117,7 +123,8 @@ struct QuickLauncherView: View {
                         .accessibilityAddTraits(index == selectedIndex ? .isSelected : [])
                     }
                 }
-                .padding(6)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 10)
             }
             .frame(maxHeight: 340)
             .fixedSize(horizontal: false, vertical: true)
@@ -198,6 +205,7 @@ private struct ParsedTokensRow: View {
         .accessibilityLabel("Recognized details")
     }
 
+    /// The same soft pill as a tag: tinted text on a faint wash of its color.
     private func chip(_ title: String, systemImage: String, tint: Color = .secondary) -> some View {
         Label(title, systemImage: systemImage)
             .font(.caption.weight(.medium))
@@ -205,13 +213,15 @@ private struct ParsedTokensRow: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
-            .background(.quaternary, in: Capsule())
+            .background(tint.opacity(0.14), in: Capsule())
     }
 }
 
 private struct LauncherRowView: View {
     let row: LauncherRow
     let isSelected: Bool
+
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -224,11 +234,18 @@ private struct LauncherRowView: View {
                     .lineLimit(1)
                     .strikethrough(isDoneTask)
                     .foregroundStyle(isDoneTask ? .secondary : .primary)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                if subtitle != nil || !rowTags.isEmpty {
+                    HStack(spacing: 6) {
+                        if let subtitle {
+                            Text(subtitle)
+                                .foregroundStyle(subtitleColor)
+                        }
+                        ForEach(rowTags) { tag in
+                            TagChip(tag: tag)
+                        }
+                    }
+                    .font(.caption)
+                    .lineLimit(1)
                 }
             }
 
@@ -242,12 +259,30 @@ private struct LauncherRowView: View {
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .contentShape(Rectangle())
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.18)) : AnyShapeStyle(Color.clear),
-            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+            isSelected ? Color.accentColor.opacity(0.14) : (isHovered ? Theme.cardHover : Color.clear),
+            in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(isSelected ? Color.accentColor.opacity(0.6) : .clear, lineWidth: 1)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+        .onHover { isHovered = $0 }
+    }
+
+    /// An existing task's tags, shown as the same pills as in the lists.
+    private var rowTags: [Tag] {
+        if case .existing(let task) = row { return task.orderedTags }
+        return []
+    }
+
+    /// Overdue and later-today times stand out, as they do in the lists.
+    private var subtitleColor: Color {
+        if case .existing(let task) = row { return TaskQuery().timeEmphasis(for: task).color }
+        return .secondary
     }
 
     @ViewBuilder

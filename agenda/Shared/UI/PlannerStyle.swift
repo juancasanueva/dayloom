@@ -27,6 +27,17 @@ extension TagColor {
     }
 }
 
+extension TimeEmphasis {
+    /// Overdue in red, later today in the accent color, otherwise quiet.
+    var color: Color {
+        switch self {
+        case .overdue: .red
+        case .today: .accentColor
+        case .normal: .secondary
+        }
+    }
+}
+
 extension EntryTint {
     var color: Color {
         switch self {
@@ -43,6 +54,20 @@ enum DayFormatting {
         if calendar.isDateInTomorrow(date) { return "Tomorrow" }
         if calendar.isDateInYesterday(date) { return "Yesterday" }
         return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+    }
+
+    /// "Today", "Tomorrow", or the full weekday name, for the day column of a list.
+    static func dayName(for date: Date, now: Date = .now, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        if calendar.isDate(date, inSameDayAs: now) { return "Today" }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
+            return "Tomorrow"
+        }
+        return date.formatted(Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).weekday(.wide))
+    }
+
+    /// Day and short month, such as "19 Nov", shown under the day name.
+    static func shortDate(for date: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        date.formatted(Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).day().month(.abbreviated))
     }
 }
 

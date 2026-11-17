@@ -27,7 +27,7 @@ struct SidebarView: View {
                     .tag(SidebarSelection.notes)
             }
 
-            Section("Tasks") {
+            Section {
                 Label("Inbox", systemImage: "tray")
                     .badge(query.tasks(from: allTasks, in: .inbox).count)
                     .tag(SidebarSelection.tasks(.inbox))
@@ -38,9 +38,11 @@ struct SidebarView: View {
                     .tag(SidebarSelection.tasks(.upcoming))
                 Label("Completed", systemImage: "checkmark.circle")
                     .tag(SidebarSelection.tasks(.completed))
+            } header: {
+                SidebarHeader("Tasks")
             }
 
-            Section("Tags") {
+            Section {
                 ForEach(tags) { tag in
                     Label {
                         Text(tag.name)
@@ -52,17 +54,24 @@ struct SidebarView: View {
                     .contextMenu { tagMenu(tag) }
                 }
                 newTagButton
+            } header: {
+                SidebarHeader("Tags")
             }
         }
+        // The sidebar sits on the same warm canvas as the content panel beside it.
+        .scrollContentBackground(.hidden)
+        .background(Theme.canvas)
         .navigationSplitViewColumnWidth(min: 190, ideal: 220)
         .safeAreaInset(edge: .bottom) {
             SettingsLink {
                 Label("Settings", systemImage: "gearshape")
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.secondary)
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(SidebarFooterButtonStyle())
+            .focusEffectDisabled()
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(Theme.canvas)
         }
         // Sheets, not alerts: alerts keep focus on their buttons, so typing wouldn't reach the name.
         .sheet(isPresented: $isAddingTag) {
@@ -92,7 +101,7 @@ struct SidebarView: View {
                 .contentShape(.rect)
                 .overlay {
                     RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(.quaternary)
+                        .strokeBorder(Color.primary.opacity(0.14))
                 }
         }
         .buttonStyle(.plain)
@@ -134,6 +143,46 @@ struct SidebarView: View {
             appState.selection = .tasks(.today)
         }
         modelContext.delete(tag)
+    }
+}
+
+/// A quiet section heading, softer than the system's.
+private struct SidebarHeader: View {
+    let title: String
+
+    init(_ title: String) {
+        self.title = title
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.tertiary)
+    }
+}
+
+/// The pinned Settings row: secondary text, a soft card under the pointer.
+private struct SidebarFooterButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Row(configuration: configuration)
+    }
+
+    private struct Row: View {
+        let configuration: ButtonStyleConfiguration
+        @State private var isHovered = false
+
+        var body: some View {
+            configuration.label
+                .foregroundStyle(isHovered ? .primary : .secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(
+                    configuration.isPressed ? Theme.hairline : (isHovered ? Theme.cardHover : Color.clear),
+                    in: RoundedRectangle(cornerRadius: 8)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8))
+                .onHover { isHovered = $0 }
+        }
     }
 }
 

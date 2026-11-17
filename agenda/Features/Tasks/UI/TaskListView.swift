@@ -13,6 +13,7 @@ struct TaskListView: View {
     @AppStorage(TaskLayout.storageKey) private var layout: TaskLayout = .list
     @State private var newTitle = ""
     @FocusState private var isQuickAddFocused: Bool
+    @FocusState private var isListFocused: Bool
 
     private var query: TaskQuery { TaskQuery() }
 
@@ -24,39 +25,20 @@ struct TaskListView: View {
         return tags.first { $0.persistentModelID == id }
     }
 
-    private var selection: Binding<PersistentIdentifier?> {
-        Binding(get: { appState.selectedTaskID }, set: { appState.select(task: $0) })
-    }
-
     var body: some View {
         let query = query
         let tasks = query.tasks(from: allTasks, in: scope)
 
-        VStack(spacing: 0) {
-            if scope != .completed {
-                quickAddBar
-            }
-
-            if scope == .today {
-                TodayHabitsStrip()
-            }
-
+        Group {
             if showsBoard {
-                board(query: query)
+                boardPage(tasks, query: query)
             } else {
-                list(tasks, query: query)
+                listPage(tasks, query: query)
             }
         }
+        .plannerPanel()
         .navigationTitle(title)
-        .navigationSubtitle(tasks.isEmpty ? "" : "\(tasks.count) \(tasks.count == 1 ? "task" : "tasks")")
-        .toolbar {
-            if scope != .completed {
-                ToolbarItem {
-                    layoutPicker
-                }
-            }
-        }
-        .onDeleteCommand(perform: deleteSelectedTask)
+        .toolbar(removing: .title)
         .onChange(of: appState.pendingQuickAdd, initial: true) { _, pending in
             guard pending else { return }
             isQuickAddFocused = true
@@ -64,28 +46,104 @@ struct TaskListView: View {
         }
     }
 
-    private func list(_ tasks: [TaskItem], query: TaskQuery) -> some View {
-        List(selection: selection) {
-            if scope == .upcoming {
-                ForEach(query.upcomingSections(from: allTasks)) { section in
-                    Section(DayFormatting.relativeTitle(for: section.day)) {
-                        rows(section.tasks, query: query)
-                    }
-                }
-            } else {
-                rows(tasks, query: query)
+    // MARK: Pages
+
+    private func header(_ tasks: [TaskItem]) -> some View {
+        PageHeader(title, subtitle: TaskListHeading.subtitle(for: scope, count: tasks.count)) {
+            if scope != .completed {
+                layoutPicker
             }
         }
-        .listStyle(.inset)
-        .overlay {
-            if tasks.isEmpty { emptyState }
+    }
+
+    /// Header and quick add above the content, shared by the list and the board.
+    @ViewBuilder
+    private func top(_ tasks: [TaskItem]) -> some View {
+        header(tasks)
+        if scope != .completed {
+            quickAddBar
+        }
+        if scope == .today {
+            TodayHabitsStrip()
+        }
+    }
+
+    private func listPage(_ tasks: [TaskItem], query: TaskQuery) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                top(tasks)
+
+                if tasks.isEmpty {
+                    emptyState
+                        .frame(maxWidth: .infinity, minHeight: 280)
+                } else if scope == .upcoming {
+                    upcomingDays(query: query)
+                } else {
+                    cards(tasks, query: query, showsDay: scope != .today)
+                }
+            }
+            .frame(maxWidth: Theme.readableWidth, alignment: .leading)
+            .padding(Theme.pagePadding)
+            .frame(maxWidth: .infinity)
+        }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isListFocused)
+        // The list is focusable for the arrow keys; still open with the cursor in quick add, as before.
+        .onAppear { isQuickAddFocused = scope != .completed }
+        .onKeyPress(.downArrow) { moveSelection(by: 1, in: orderedIDs(tasks, query: query)) }
+        .onKeyPress(.upArrow) { moveSelection(by: -1, in: orderedIDs(tasks, query: query)) }
+        .onDeleteCommand(perform: deleteSelectedTask)
+    }
+
+    private func boardPage(_ tasks: [TaskItem], query: TaskQuery) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 18) {
+                top(tasks)
+            }
+            .padding(Theme.pagePadding)
+            .padding(.bottom, -Theme.pagePadding.bottom + 4)
+
+            board(query: query)
+        }
+        .onDeleteCommand(perform: deleteSelectedTask)
+    }
+
+    /// Upcoming groups tasks by day: the day in a column on the left, its tasks beside it.
+    private func upcomingDays(query: TaskQuery) -> some View {
+        VStack(alignment: .leading, spacing: 22) {
+            ForEach(query.upcomingSections(from: allTasks)) { section in
+                HStack(alignment: .top, spacing: 16) {
+                    DayColumnLabel(day: section.day)
+                        .frame(width: Theme.dayColumnWidth, alignment: .leading)
+                    cards(section.tasks, query: query, showsDay: false)
+                }
+            }
+        }
+    }
+
+    private func cards(_ tasks: [TaskItem], query: TaskQuery, showsDay: Bool) -> some View {
+        VStack(spacing: 6) {
+            ForEach(tasks) { task in
+                let id = task.persistentModelID
+                TaskRowView(
+                    task: task,
+                    emphasis: query.timeEmphasis(for: task),
+                    isSelected: appState.selectedTaskID == id,
+                    showsDay: showsDay
+                )
+                .onTapGesture { select(id) }
+                .contextMenu { contextMenu(for: task) }
+                .accessibilityAddTraits(appState.selectedTaskID == id ? [.isButton, .isSelected] : .isButton)
+                .accessibilityAction { select(id) }
+            }
         }
     }
 
     private func board(query: TaskQuery) -> some View {
         TaskBoardView(
             columns: TaskBoard(now: query.now, calendar: query.calendar).columns(from: allTasks, in: scope),
-            isOverdue: query.isOverdue,
+            emphasis: query.timeEmphasis(for:),
             onDrop: { payloads, status in
                 TaskBoard().drop(payloads, onto: status, from: allTasks)
             },
@@ -93,27 +151,41 @@ struct TaskListView: View {
         )
     }
 
+    // MARK: Selection
+
+    private func select(_ id: PersistentIdentifier) {
+        appState.select(task: id)
+        isListFocused = true
+    }
+
+    /// Tasks in the order they appear on screen, for the arrow keys.
+    private func orderedIDs(_ tasks: [TaskItem], query: TaskQuery) -> [PersistentIdentifier] {
+        let shown = scope == .upcoming ? query.upcomingSections(from: allTasks).flatMap(\.tasks) : tasks
+        return shown.map(\.persistentModelID)
+    }
+
+    private func moveSelection(by offset: Int, in ids: [PersistentIdentifier]) -> KeyPress.Result {
+        guard let next = ListNavigation.step(from: appState.selectedTaskID, in: ids, by: offset) else { return .ignored }
+        appState.select(task: next)
+        return .handled
+    }
+
     private var layoutPicker: some View {
         Picker("Layout", selection: $layout) {
             ForEach(TaskLayout.allCases) { layout in
                 Label(layout.title, systemImage: layout.systemImage)
+                    .labelStyle(.iconOnly)
                     .tag(layout)
             }
         }
         .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
         .help("Show tasks as a list or a board")
     }
 
-    private func rows(_ tasks: [TaskItem], query: TaskQuery) -> some View {
-        ForEach(tasks) { task in
-            TaskRowView(task: task, isOverdue: query.isOverdue(task))
-                .tag(task.persistentModelID)
-                .contextMenu { contextMenu(for: task) }
-        }
-    }
-
     private var quickAddBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "plus.circle.fill")
                 .foregroundStyle(.tint)
                 .font(.title3)
@@ -123,11 +195,12 @@ struct TaskListView: View {
                 .onSubmit(addTask)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 4)
+        .padding(.vertical, 10)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.cardRadius)
+                .strokeBorder(isQuickAddFocused ? Color.accentColor.opacity(0.6) : Theme.hairline, lineWidth: 1)
+        }
     }
 
     @ViewBuilder
