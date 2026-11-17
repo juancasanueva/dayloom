@@ -17,6 +17,7 @@ struct AgendaApp: App {
                 .environment(appState)
                 .environment(calendarModel)
                 .task { registerLauncherHotKey() }
+                .task { await observeSync() }
         }
         .modelContainer(modelContainer)
         .defaultSize(width: 1180, height: 760)
@@ -31,6 +32,12 @@ struct AgendaApp: App {
             SettingsView()
                 .environment(syncStatus)
         }
+    }
+
+    /// Tracks the iCloud account and sync results from launch, so Settings can show them.
+    private func observeSync() async {
+        guard !PlannerSchema.isRunningTests else { return }
+        await syncStatus.observeChanges()
     }
 
     /// Sync can't enforce uniqueness, so copies made on two Macs are folded together

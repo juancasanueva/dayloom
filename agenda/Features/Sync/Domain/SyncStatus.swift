@@ -8,6 +8,8 @@ enum SyncStatus: Equatable {
     case signedOut
     case restricted
     case unavailable
+    /// Signed in, but the last sync attempt failed.
+    case problem
 
     init(_ account: CKAccountStatus) {
         switch account {
@@ -26,6 +28,7 @@ enum SyncStatus: Equatable {
         case .signedOut: "Not signed in to iCloud"
         case .restricted: "iCloud is restricted"
         case .unavailable: "iCloud is unavailable"
+        case .problem: "iCloud sync hit a problem"
         }
     }
 
@@ -36,6 +39,7 @@ enum SyncStatus: Equatable {
         case .signedOut: "Sign in to iCloud in System Settings to sync. Until then, everything stays on this Mac."
         case .restricted: "This Mac's settings don't allow iCloud for Agenda. Your data stays on this Mac."
         case .unavailable: "Agenda syncs again once iCloud is reachable. Your changes are kept on this Mac."
+        case .problem: "Your changes are kept on this Mac, and Agenda keeps retrying."
         }
     }
 
@@ -44,17 +48,27 @@ enum SyncStatus: Equatable {
         case .checking: "icloud"
         case .on: "checkmark.icloud"
         case .signedOut, .restricted: "icloud.slash"
-        case .unavailable: "exclamationmark.icloud"
+        case .unavailable, .problem: "exclamationmark.icloud"
         }
     }
 }
 
-/// Port for reading the iCloud account state.
+/// A finished or running sync step (setup, import, or export).
+struct SyncEvent: Equatable {
+    /// `nil` while the step is still running.
+    var endDate: Date?
+    /// Set when the step failed.
+    var errorDescription: String?
+}
+
+/// Port for reading the iCloud account state and sync activity.
 protocol AccountStatusProvider {
     /// `nil` when the status couldn't be read.
     func accountStatus() async -> CKAccountStatus?
     /// Emits whenever the iCloud account changes.
     func changes() -> AsyncStream<Void>
+    /// Emits every sync step the store reports.
+    func syncEvents() -> AsyncStream<SyncEvent>
 }
 
 /// Fixed answer used by previews and tests.
@@ -63,4 +77,5 @@ struct StaticAccountStatusProvider: AccountStatusProvider {
 
     func accountStatus() async -> CKAccountStatus? { status }
     func changes() -> AsyncStream<Void> { AsyncStream { $0.finish() } }
+    func syncEvents() -> AsyncStream<SyncEvent> { AsyncStream { $0.finish() } }
 }

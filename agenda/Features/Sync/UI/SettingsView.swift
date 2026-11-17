@@ -15,6 +15,17 @@ struct SettingsView: View {
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                        if let problem = syncStatus.problem, syncStatus.status == .problem {
+                            Text(problem)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                        if let lastSynced = syncStatus.lastSynced {
+                            Text("Last synced \(lastSynced.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
                 } icon: {
                     Image(systemName: syncStatus.status.symbol)
@@ -25,7 +36,6 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 440)
         .fixedSize(horizontal: false, vertical: true)
-        .task { await syncStatus.observeChanges() }
     }
 }
 
