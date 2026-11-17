@@ -31,18 +31,23 @@ struct CalendarAccessBanner: View {
     }
 
     private func banner(icon: String, message: String, action: String, perform: @escaping () -> Void) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(.tint)
+                .frame(width: 34, height: 34)
+                .background(Color.accentColor.opacity(0.12), in: Circle())
+                .accessibilityHidden(true)
             Text(message)
-            Spacer()
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
             Button(action, action: perform)
                 .buttonStyle(.borderedProminent)
                 .fixedSize()
         }
-        .padding(12)
-        .background(.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-        .padding([.horizontal, .top], 12)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .plannerCard()
     }
 }
