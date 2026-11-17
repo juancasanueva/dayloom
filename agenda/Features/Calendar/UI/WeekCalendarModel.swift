@@ -26,6 +26,15 @@ final class WeekCalendarModel {
         events = source.events(in: interval)
     }
 
+    /// Events on the day containing `date`, read straight from the source without changing the visible week.
+    func events(on date: Date) -> [CalendarEntry] {
+        let calendar = week.calendar
+        let start = calendar.startOfDay(for: date)
+        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(24 * 60 * 60)
+        return source.events(in: DateInterval(start: start, end: end))
+            .sorted { ($0.isAllDay ? 0 : 1, $0.start) < ($1.isAllDay ? 0 : 1, $1.start) }
+    }
+
     func requestAccess() async {
         access = await source.requestAccess()
         reload()

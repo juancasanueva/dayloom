@@ -69,6 +69,10 @@ final class TaskItem {
     @Relationship(inverse: \Tag.tasks)
     var tags: [Tag]? = []
 
+    /// Note blocks that show this task. Deleting the task unlinks them.
+    @Relationship(deleteRule: .nullify, inverse: \NoteBlock.task)
+    var noteBlocks: [NoteBlock]? = []
+
     init(
         title: String,
         dueDate: Date? = nil,

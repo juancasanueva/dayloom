@@ -15,6 +15,8 @@ struct RootView: View {
                 WeekView()
             case .habits:
                 HabitsView()
+            case .notes:
+                NotesView()
             case .tasks(let scope):
                 TaskListView(scope: scope)
             case nil:

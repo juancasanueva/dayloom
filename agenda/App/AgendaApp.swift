@@ -41,6 +41,8 @@ private struct PlannerCommands: Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Task") { appState.requestQuickAdd() }
                 .keyboardShortcut("n")
+            Button("New Note") { appState.requestNewNote() }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
             Button("Quick Launcher") { appState.isLauncherPresented.toggle() }
                 .keyboardShortcut("k")
         }
@@ -65,6 +67,8 @@ private struct PlannerCommands: Commands {
                 .keyboardShortcut("5")
             Button("Habits") { appState.selection = .habits }
                 .keyboardShortcut("6")
+            Button("Notes") { appState.selection = .notes }
+                .keyboardShortcut("7")
         }
     }
 }
