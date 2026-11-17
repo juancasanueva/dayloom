@@ -36,6 +36,13 @@ struct WeekCalendar {
         calendar.date(byAdding: .weekOfYear, value: weeks, to: date) ?? date
     }
 
+    /// The half hour on `day` that a point `minute` minutes into the day falls in, for a new task.
+    func slotStart(on day: Date, atMinute minute: Double) -> Date {
+        let snapped = min(max(Int(minute), 0) / 30 * 30, 23 * 60 + 30)
+        let dayStart = calendar.startOfDay(for: day)
+        return calendar.date(byAdding: .minute, value: snapped, to: dayStart) ?? dayStart
+    }
+
     func allDayEntries(_ entries: [CalendarEntry], on day: Date) -> [CalendarEntry] {
         let (dayStart, dayEnd) = bounds(of: day)
         return entries

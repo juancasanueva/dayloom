@@ -299,6 +299,7 @@ private struct DayColumn: View {
     var onSelectTask: (PersistentIdentifier) -> Void
 
     private let hourHeight = WeekGridMetrics.hourHeight
+    private let week = WeekCalendar()
 
     var body: some View {
         let isToday = Calendar.current.isDateInToday(day)
@@ -309,6 +310,12 @@ private struct DayColumn: View {
                     .contentShape(Rectangle())
                     .onTapGesture(count: 2) { location in
                         onCreateTask(startDate(forY: location.y))
+                    }
+                    .overlay {
+                        SlotMenuArea(
+                            title: { y in "New Task at \(startDate(forY: y).formatted(date: .omitted, time: .shortened))" },
+                            action: { y in onCreateTask(startDate(forY: y)) }
+                        )
                     }
 
                 ForEach(positioned) { item in
@@ -347,11 +354,9 @@ private struct DayColumn: View {
         }
     }
 
-    /// Snaps a click in the column to the half hour it falls in.
+    /// Snaps a point in the column to the half hour it falls in.
     private func startDate(forY y: CGFloat) -> Date {
-        let minutes = Int(max(0, y) / hourHeight * 60) / 30 * 30
-        let dayStart = Calendar.current.startOfDay(for: day)
-        return Calendar.current.date(byAdding: .minute, value: min(minutes, 23 * 60 + 30), to: dayStart) ?? dayStart
+        week.slotStart(on: day, atMinute: Double(y / hourHeight * 60))
     }
 }
 

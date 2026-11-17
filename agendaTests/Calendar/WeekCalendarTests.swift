@@ -105,4 +105,20 @@ struct WeekCalendarTests {
         #expect(entries.first?.end == at(14, 30))
         #expect(entries.first?.taskID == scheduled.persistentModelID)
     }
+
+    // MARK: New task slots
+
+    static let slotCases: [(minute: Double, expected: Date)] = [
+        (0, TestClock.date(2026, 11, 18, 0)),
+        (29, TestClock.date(2026, 11, 18, 0)),
+        (30, TestClock.date(2026, 11, 18, 0, 30)),
+        (947, TestClock.date(2026, 11, 18, 15, 30)), // 15:47
+        (-20, TestClock.date(2026, 11, 18, 0)),
+        (1450, TestClock.date(2026, 11, 18, 23, 30)), // past midnight
+    ]
+
+    @Test(arguments: slotCases)
+    func aPointInTheDaySnapsToTheHalfHourItFallsIn(slot: (minute: Double, expected: Date)) {
+        #expect(week.slotStart(on: TestClock.date(2026, 11, 18), atMinute: slot.minute) == slot.expected)
+    }
 }

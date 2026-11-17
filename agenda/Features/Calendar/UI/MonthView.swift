@@ -106,6 +106,10 @@ private struct MonthDayCell: View {
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.hairline).frame(height: 1) }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onCreateTask(day) }
+        .contextMenu {
+            Button("New Task on \(day.formatted(.dateTime.day().month(.abbreviated)))", systemImage: "plus") { onCreateTask(day) }
+            Button("Show Week", systemImage: "calendar") { onOpenDay(day) }
+        }
         .accessibilityElement(children: .contain)
     }
 }
