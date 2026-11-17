@@ -23,7 +23,8 @@ struct QuickLauncherView: View {
         let rows = LauncherResults.rows(for: input, query: text, tasks: allTasks, calendarAccess: calendarModel.access)
 
         ZStack(alignment: .top) {
-            Color.black.opacity(0.18)
+            // Dark enough that the launcher clearly takes the stage.
+            Color.black.opacity(0.65)
                 .ignoresSafeArea()
                 .onTapGesture(perform: close)
                 .accessibilityHidden(true)
