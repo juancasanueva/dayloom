@@ -89,6 +89,8 @@ struct TaskListView: View {
         .focusable()
         .focusEffectDisabled()
         .focused($isListFocused)
+        // The list is focusable for the arrow keys; still open with the cursor in quick add, as before.
+        .onAppear { isQuickAddFocused = scope != .completed }
         .onKeyPress(.downArrow) { moveSelection(by: 1, in: orderedIDs(tasks, query: query)) }
         .onKeyPress(.upArrow) { moveSelection(by: -1, in: orderedIDs(tasks, query: query)) }
         .onDeleteCommand(perform: deleteSelectedTask)

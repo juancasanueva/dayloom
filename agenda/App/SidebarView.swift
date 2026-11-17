@@ -68,6 +68,7 @@ struct SidebarView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(SidebarFooterButtonStyle())
+            .focusEffectDisabled()
             .padding(.horizontal, 10)
             .padding(.vertical, 10)
             .background(Theme.canvas)
