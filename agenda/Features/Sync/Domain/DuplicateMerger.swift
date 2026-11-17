@@ -1,0 +1,101 @@
+import Foundation
+import SwiftData
+
+/// Folds together records that sync can duplicate, since CloudKit-backed stores can't
+/// enforce uniqueness. The oldest record survives, so every Mac picks the same one.
+struct DuplicateMerger {
+    struct Report: Equatable {
+        var tags = 0
+        var dailyNotes = 0
+        var habitCompletions = 0
+    }
+
+    var calendar: Calendar = .current
+
+    /// Merges duplicates and returns how many records were removed of each kind.
+    @discardableResult
+    func mergeDuplicates(in context: ModelContext) -> Report {
+        Report(
+            tags: mergeTags(in: context),
+            dailyNotes: mergeDailyNotes(in: context),
+            habitCompletions: mergeHabitCompletions(in: context)
+        )
+    }
+
+    // MARK: Tags
+
+    /// Tags whose names match ignoring case and surrounding spaces become one.
+    private func mergeTags(in context: ModelContext) -> Int {
+        let tags = (try? context.fetch(FetchDescriptor<Tag>())) ?? []
+        let groups = Dictionary(grouping: tags) {
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        }
+        var removed = 0
+        for group in groups.values where group.count > 1 {
+            let ordered = group.sorted { ($0.createdAt, $0.name, $0.colorRaw) < ($1.createdAt, $1.name, $1.colorRaw) }
+            let survivor = ordered[0]
+            for duplicate in ordered.dropFirst() {
+                for task in duplicate.tasks ?? [] {
+                    var taskTags = (task.tags ?? []).filter { $0 !== duplicate }
+                    if !taskTags.contains(where: { $0 === survivor }) {
+                        taskTags.append(survivor)
+                    }
+                    task.tags = taskTags
+                }
+                context.delete(duplicate)
+                removed += 1
+            }
+        }
+        return removed
+    }
+
+    // MARK: Daily notes
+
+    /// Daily notes for the same day become one; the copies' non-empty blocks are appended in order.
+    private func mergeDailyNotes(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<Note>(predicate: #Predicate { $0.dailyDate != nil })
+        let notes = (try? context.fetch(descriptor)) ?? []
+        let groups = Dictionary(grouping: notes) { calendar.startOfDay(for: $0.dailyDate ?? .distantPast) }
+        var removed = 0
+        for group in groups.values where group.count > 1 {
+            let ordered = group.sorted { ($0.createdAt, $0.title) < ($1.createdAt, $1.title) }
+            let survivor = ordered[0]
+            for duplicate in ordered.dropFirst() {
+                for block in duplicate.orderedBlocks where !isBlank(block) {
+                    // Detach first so deleting the copy doesn't cascade to the moved block.
+                    duplicate.blocks?.removeAll { $0 === block }
+                    block.sortIndex = (survivor.orderedBlocks.last?.sortIndex ?? 0) + 1
+                    block.note = survivor
+                }
+                survivor.isPinned = survivor.isPinned || duplicate.isPinned
+                survivor.updatedAt = max(survivor.updatedAt, duplicate.updatedAt)
+                context.delete(duplicate)
+                removed += 1
+            }
+        }
+        return removed
+    }
+
+    private func isBlank(_ block: NoteBlock) -> Bool {
+        block.kind == .text && block.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    // MARK: Habit completions
+
+    /// A habit keeps one completion per day.
+    private func mergeHabitCompletions(in context: ModelContext) -> Int {
+        let habits = (try? context.fetch(FetchDescriptor<Habit>())) ?? []
+        var removed = 0
+        for habit in habits {
+            let groups = Dictionary(grouping: habit.completions ?? []) { calendar.startOfDay(for: $0.day) }
+            for group in groups.values where group.count > 1 {
+                for extra in group.sorted(by: { $0.day < $1.day }).dropFirst() {
+                    habit.completions?.removeAll { $0 === extra }
+                    context.delete(extra)
+                    removed += 1
+                }
+            }
+        }
+        return removed
+    }
+}
