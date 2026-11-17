@@ -1,0 +1,53 @@
+import Foundation
+import Observation
+
+/// State for the week view: which week is shown and the events loaded for it.
+@Observable
+final class WeekCalendarModel {
+    private(set) var anchor: Date
+    private(set) var events: [CalendarEntry] = []
+    private(set) var access: CalendarAccess
+
+    let week: WeekCalendar
+    private let source: CalendarEventSource
+
+    init(source: CalendarEventSource, week: WeekCalendar = WeekCalendar(), anchor: Date = .now) {
+        self.source = source
+        self.week = week
+        self.anchor = anchor
+        self.access = source.access
+    }
+
+    var days: [Date] { week.days(containing: anchor) }
+    var interval: DateInterval { week.interval(containing: anchor) }
+
+    func reload() {
+        access = source.access
+        events = source.events(in: interval)
+    }
+
+    func requestAccess() async {
+        access = await source.requestAccess()
+        reload()
+    }
+
+    func showNextWeek() { move(byWeeks: 1) }
+    func showPreviousWeek() { move(byWeeks: -1) }
+
+    func showToday(_ now: Date = .now) {
+        anchor = now
+        reload()
+    }
+
+    /// Keeps events fresh while the view is on screen.
+    func observeChanges() async {
+        for await _ in source.changes() {
+            reload()
+        }
+    }
+
+    private func move(byWeeks weeks: Int) {
+        anchor = week.shift(anchor, byWeeks: weeks)
+        reload()
+    }
+}
