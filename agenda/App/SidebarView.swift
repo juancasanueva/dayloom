@@ -4,6 +4,7 @@ import SwiftUI
 struct SidebarView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.appearsActive) private var appearsActive
     @Query private var allTasks: [TaskItem]
     @Query(sort: \Tag.name) private var tags: [Tag]
 
@@ -44,33 +45,59 @@ struct SidebarView: View {
                     Label {
                         Text(tag.name)
                     } icon: {
-                        Image(systemName: "number").foregroundStyle(tag.color.color)
+                        Image(systemName: "number")
+                            .foregroundStyle(appearsActive ? AnyShapeStyle(tag.color.color) : AnyShapeStyle(.secondary))
                     }
                     .tag(SidebarSelection.tasks(.tag(tag.persistentModelID)))
                     .contextMenu { tagMenu(tag) }
                 }
+                newTagButton
             }
         }
         .navigationSplitViewColumnWidth(min: 190, ideal: 220)
         .safeAreaInset(edge: .bottom) {
-            Button("New Tag", systemImage: "plus") {
-                newTagName = ""
-                isAddingTag = true
+            SettingsLink {
+                Label("Settings", systemImage: "gearshape")
             }
             .buttonStyle(.borderless)
+            .foregroundStyle(.secondary)
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .alert("New Tag", isPresented: $isAddingTag) {
-            TextField("Name", text: $newTagName)
-            Button("Add", action: addTag)
-            Button("Cancel", role: .cancel) {}
+        // Sheets, not alerts: alerts keep focus on their buttons, so typing wouldn't reach the name.
+        .sheet(isPresented: $isAddingTag) {
+            TagNameSheet(title: "New Tag", actionTitle: "Add", name: $newTagName, onSave: addTag)
         }
-        .alert("Rename Tag", isPresented: isRenaming, presenting: tagBeingRenamed) { tag in
-            TextField("Name", text: $renameText)
-            Button("Rename") { rename(tag) }
-            Button("Cancel", role: .cancel) {}
+        .sheet(item: $tagBeingRenamed) { tag in
+            TagNameSheet(title: "Rename Tag", actionTitle: "Rename", name: $renameText) { rename(tag) }
         }
+    }
+
+    /// Sits under the tags as an outlined row, so it reads as an action rather than a tag.
+    private var newTagButton: some View {
+        Button {
+            newTagName = ""
+            isAddingTag = true
+        } label: {
+            Label {
+                Text("New Tag")
+            } icon: {
+                // Accent only while the window is active, like the sidebar's other icons.
+                Image(systemName: "plus.circle")
+                    .foregroundStyle(appearsActive ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+            }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(.quaternary)
+                }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .padding(.top, 4)
     }
 
     @ViewBuilder
@@ -86,10 +113,6 @@ struct SidebarView: View {
         }
         Divider()
         Button("Delete Tag", role: .destructive) { delete(tag) }
-    }
-
-    private var isRenaming: Binding<Bool> {
-        Binding(get: { tagBeingRenamed != nil }, set: { if !$0 { tagBeingRenamed = nil } })
     }
 
     private func addTag() {
@@ -111,5 +134,48 @@ struct SidebarView: View {
             appState.selection = .tasks(.today)
         }
         modelContext.delete(tag)
+    }
+}
+
+/// Asks for a tag's name, with the cursor already in the field.
+private struct TagNameSheet: View {
+    let title: String
+    let actionTitle: String
+    @Binding var name: String
+    var onSave: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var isNameFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+            TextField("Name", text: $name, prompt: Text("Name"))
+                .labelsHidden()
+                .focused($isNameFocused)
+                .onSubmit(save)
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button(actionTitle, action: save)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(isBlank)
+            }
+        }
+        .padding(20)
+        .frame(width: 280)
+        .onAppear { isNameFocused = true }
+    }
+
+    private var isBlank: Bool {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func save() {
+        guard !isBlank else { return }
+        onSave()
+        dismiss()
     }
 }
