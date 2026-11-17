@@ -103,3 +103,35 @@ extension View {
         }
     }
 }
+
+// MARK: - Controls
+
+/// A quiet rounded control for a page header: the card surface, a little stronger under the pointer or when pressed.
+struct PageControlStyle: ButtonStyle {
+    var horizontalPadding: CGFloat = 12
+
+    func makeBody(configuration: Configuration) -> some View {
+        PageControl(configuration: configuration, horizontalPadding: horizontalPadding)
+    }
+
+    private struct PageControl: View {
+        let configuration: ButtonStyleConfiguration
+        let horizontalPadding: CGFloat
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var isHovered = false
+
+        var body: some View {
+            configuration.label
+                .font(.callout.weight(.medium))
+                .foregroundStyle(isEnabled ? .primary : .tertiary)
+                .padding(.horizontal, horizontalPadding)
+                .frame(minHeight: 28)
+                .background(
+                    configuration.isPressed ? Theme.hairline : (isHovered ? Theme.cardHover : Theme.card),
+                    in: RoundedRectangle(cornerRadius: 8)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8))
+                .onHover { isHovered = $0 }
+        }
+    }
+}

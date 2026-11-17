@@ -30,6 +30,7 @@ struct HabitEditorSheet: View {
     @State private var color: TagColor
     @State private var days: HabitDays
     @State private var isConfirmingDelete = false
+    @FocusState private var isNameFocused: Bool
 
     private let calendar = Calendar.current
 
@@ -68,24 +69,28 @@ struct HabitEditorSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(isNew ? "New Habit" : "Edit Habit")
-                .font(.headline)
-                .padding([.horizontal, .top], 20)
+        VStack(alignment: .leading, spacing: 18) {
+            header
 
-            Form {
-                Section("Name") {
-                    TextField("Name", text: $name, prompt: Text("Drink water"))
-                        .labelsHidden()
-                        .multilineTextAlignment(.leading)
-                }
-                Section("Icon") { symbolGrid }
-                Section("Color") { colorRow }
-                Section("Repeat On") { weekdayPicker }
+            EditorSection("Name") {
+                TextField("Name", text: $name, prompt: Text("Drink water"))
+                    .textFieldStyle(.plain)
+                    .focused($isNameFocused)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(isNameFocused ? Color.accentColor.opacity(0.6) : Theme.hairline, lineWidth: 1)
+                    }
             }
-            .formStyle(.grouped)
+            EditorSection("Icon") { symbolGrid }
+            EditorSection("Color") { colorRow }
+            EditorSection("Repeat On") { weekdayPicker }
         }
+        .padding(20)
         .frame(width: 440)
+        .background(Theme.panel)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }
@@ -107,19 +112,45 @@ struct HabitEditorSheet: View {
         }
     }
 
+    /// Title with a live preview of the habit's icon and name.
+    private var header: some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbolName)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(color.color)
+                .frame(width: 44, height: 44)
+                .background(color.color.opacity(0.16), in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isNew ? "New Habit" : "Edit Habit")
+                    .font(Theme.sectionTitle)
+                Text(trimmedName.isEmpty ? "A routine to keep, one day at a time" : trimmedName)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
     // MARK: Controls
 
     private var symbolGrid: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.fixed(32), spacing: 8), count: 8), spacing: 8) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 8), spacing: 6) {
             ForEach(Self.symbols, id: \.self) { symbol in
                 let isSelected = symbol == symbolName
                 Button {
                     symbolName = symbol
                 } label: {
                     Image(systemName: symbol)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 34, height: 34)
                         .foregroundStyle(isSelected ? color.color : Color.secondary)
-                        .background(isSelected ? color.color.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                        .background(isSelected ? color.color.opacity(0.18) : Theme.card, in: RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(isSelected ? color.color.opacity(0.6) : Color.clear, lineWidth: 1.5)
+                        }
                         .contentShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
@@ -130,7 +161,7 @@ struct HabitEditorSheet: View {
     }
 
     private var colorRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ForEach(TagColor.allCases) { option in
                 let isSelected = option == color
                 Button {
@@ -141,6 +172,7 @@ struct HabitEditorSheet: View {
                         .frame(width: 20, height: 20)
                         .padding(3)
                         .overlay(Circle().strokeBorder(isSelected ? option.color : Color.clear, lineWidth: 2))
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(option.rawValue.capitalized)
@@ -151,29 +183,32 @@ struct HabitEditorSheet: View {
 
     private var weekdayPicker: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(orderedWeekdays, id: \.self) { weekday in
                     let isOn = days.contains(weekday: weekday)
                     Button {
                         days.formSymmetricDifference(HabitDays(weekday: weekday))
                     } label: {
                         Text(calendar.veryShortWeekdaySymbols[weekday - 1])
-                            .font(.callout.weight(.medium))
-                            .frame(width: 28, height: 28)
+                            .font(.callout.weight(.semibold))
+                            .frame(width: 30, height: 30)
                             .foregroundStyle(isOn ? Color.white : Color.primary)
-                            .background(isOn ? color.color : Color.secondary.opacity(0.15), in: Circle())
+                            .background(isOn ? AnyShapeStyle(color.color) : AnyShapeStyle(Theme.card), in: Circle())
+                            .overlay(Circle().strokeBorder(isOn ? Color.clear : Theme.hairline, lineWidth: 1))
+                            .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(calendar.weekdaySymbols[weekday - 1])
                     .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
             }
-            HStack {
+            HStack(spacing: 6) {
                 Button("Every Day") { days = .everyDay }
                     .disabled(days == .everyDay)
                 Button("Weekdays") { days = .weekdays }
                     .disabled(days == .weekdays)
             }
+            .buttonStyle(PageControlStyle(horizontalPadding: 10))
             .controlSize(.small)
             if days.isEmpty {
                 Text("Pick at least one day.")
@@ -209,5 +244,26 @@ struct HabitEditorSheet: View {
             modelContext.delete(habit)
         }
         dismiss()
+    }
+}
+
+/// A small caption over a group of fields in the editor.
+private struct EditorSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    init(_ title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityAddTraits(.isHeader)
+            content
+        }
     }
 }
