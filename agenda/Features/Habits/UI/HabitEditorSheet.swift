@@ -81,7 +81,7 @@ struct HabitEditorSheet: View {
                     .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
                     .overlay {
                         RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(isNameFocused ? Color.accentColor.opacity(0.6) : Theme.hairline, lineWidth: 1)
+                            .strokeBorder(isNameFocused ? Theme.accent.opacity(0.6) : Theme.hairline, lineWidth: 1)
                     }
             }
             EditorSection("Icon") { symbolGrid }

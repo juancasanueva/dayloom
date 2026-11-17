@@ -168,10 +168,10 @@ private struct WeekDayLabel: View {
         VStack(alignment: .leading, spacing: 1) {
             Text(day, format: .dateTime.weekday(.abbreviated))
                 .font(Theme.sectionTitle)
-                .foregroundStyle(isToday ? Color.accentColor : Color.primary)
+                .foregroundStyle(isToday ? Theme.accent : Color.primary)
             Text(DayFormatting.shortDate(for: day))
                 .font(.caption)
-                .foregroundStyle(isToday ? AnyShapeStyle(Color.accentColor.opacity(0.8)) : AnyShapeStyle(.secondary))
+                .foregroundStyle(isToday ? AnyShapeStyle(Theme.accent.opacity(0.8)) : AnyShapeStyle(.secondary))
         }
         .lineLimit(1)
         .minimumScaleFactor(0.8)
@@ -228,7 +228,7 @@ private struct AllDayRow: View {
 
 private enum TodayColumn {
     /// The soft wash behind today's column.
-    static let tint = Color.accentColor.opacity(0.06)
+    static var tint: Color { Theme.accent.opacity(0.06) }
 }
 
 private struct HourLabelsColumn: View {

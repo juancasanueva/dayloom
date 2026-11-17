@@ -36,7 +36,7 @@ struct CalendarAccessBanner: View {
                 .font(.title3)
                 .foregroundStyle(.tint)
                 .frame(width: 34, height: 34)
-                .background(Color.accentColor.opacity(0.12), in: Circle())
+                .background(Theme.accent.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
             Text(message)
                 .font(.callout)

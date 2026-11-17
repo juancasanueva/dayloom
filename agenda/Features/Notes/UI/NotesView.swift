@@ -96,7 +96,7 @@ struct NotesView: View {
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.6) : Theme.hairline, lineWidth: 1)
+                .strokeBorder(isSearchFocused ? Theme.accent.opacity(0.6) : Theme.hairline, lineWidth: 1)
         }
     }
 
@@ -267,7 +267,7 @@ private struct NoteCard: View {
                 if note.isPinned {
                     Image(systemName: "pin.fill")
                         .font(.caption2)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Theme.accent)
                         .accessibilityLabel("Pinned")
                 }
             }

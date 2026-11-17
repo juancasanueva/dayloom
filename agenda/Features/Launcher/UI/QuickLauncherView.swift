@@ -267,12 +267,12 @@ private struct LauncherRowView: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            isSelected ? Color.accentColor.opacity(0.14) : (isHovered ? Theme.cardHover : Color.clear),
+            isSelected ? Theme.accent.opacity(0.14) : (isHovered ? Theme.cardHover : Color.clear),
             in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
         )
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .strokeBorder(isSelected ? Color.accentColor.opacity(0.6) : .clear, lineWidth: 1)
+                .strokeBorder(isSelected ? Theme.accent.opacity(0.6) : .clear, lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .onHover { isHovered = $0 }
@@ -294,9 +294,9 @@ private struct LauncherRowView: View {
     private var icon: some View {
         switch row {
         case .newTask:
-            Image(systemName: "plus.circle.fill").foregroundStyle(Color.accentColor)
+            Image(systemName: "plus.circle.fill").foregroundStyle(Theme.accent)
         case .newEvent:
-            Image(systemName: "calendar.badge.plus").foregroundStyle(Color.accentColor)
+            Image(systemName: "calendar.badge.plus").foregroundStyle(Theme.accent)
         case .existing(let task):
             Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(task.isDone ? Color.secondary : task.priority.color)

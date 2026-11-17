@@ -38,6 +38,7 @@ struct AgendaApp: App {
             RootView()
                 .environment(appState)
                 .environment(calendarModel)
+                .themedAppearance()
                 .task { registerLauncherHotKey() }
         }
         .modelContainer(modelContainer)

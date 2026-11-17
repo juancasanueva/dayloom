@@ -32,7 +32,7 @@ extension TimeEmphasis {
     var color: Color {
         switch self {
         case .overdue: .red
-        case .today: .accentColor
+        case .today: Theme.accent
         case .normal: .secondary
         }
     }
@@ -41,7 +41,7 @@ extension TimeEmphasis {
 extension EntryTint {
     var color: Color {
         switch self {
-        case .accent: .accentColor
+        case .accent: Theme.accent
         case let .rgb(red, green, blue): Color(red: red, green: green, blue: blue)
         }
     }

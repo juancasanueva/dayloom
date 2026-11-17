@@ -19,12 +19,14 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Settings")
                     .font(Theme.sectionTitle)
-                Text("How Dayloom keeps your planner in sync.")
+                Text("How Dayloom looks and keeps your planner in sync.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
+
+            ThemeSettingsSection()
 
             PanelSection("iCloud") {
                 HStack(alignment: .top, spacing: 12) {
@@ -56,14 +58,15 @@ struct SettingsView: View {
             }
         }
         .padding(24)
-        .frame(width: 440, alignment: .topLeading)
+        .frame(width: 600, alignment: .topLeading)
         .fixedSize(horizontal: false, vertical: true)
         .containerBackground(Theme.panel, for: .window)
+        .themedAppearance()
     }
 
     /// The sync symbol on a soft round wash, tinted while sync is on.
     private var statusIcon: some View {
-        let tint = syncStatus.status == .on ? Color.accentColor : Color.secondary
+        let tint = syncStatus.status == .on ? Theme.accent : Color.secondary
         return Image(systemName: syncStatus.status.symbol)
             .font(.body.weight(.semibold))
             .foregroundStyle(tint)

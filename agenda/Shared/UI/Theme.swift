@@ -6,14 +6,27 @@ import SwiftUI
 enum Theme {
     // MARK: Surfaces
 
+    // Each surface follows the chosen dark and light themes (ThemeStore). Reading the store here
+    // inside a view's body is what redraws the view when the theme changes.
+
     /// Window background behind the content panel.
-    static let canvas = adaptive(light: 0xE8E4DD, dark: 0x151617)
+    static var canvas: Color { adaptive(\.canvas) }
     /// The rounded panel that holds a screen's content.
-    static let panel = adaptive(light: 0xFBF9F6, dark: 0x1E1F22)
+    static var panel: Color { adaptive(\.panel) }
     /// Resting surface of a card.
-    static let card = adaptive(light: 0xF1EDE7, dark: 0x292A2E)
+    static var card: Color { adaptive(\.card) }
     /// Card surface under the pointer.
-    static let cardHover = adaptive(light: 0xEAE5DD, dark: 0x303135)
+    static var cardHover: Color { adaptive(\.cardHover) }
+    /// The theme's accent, or the system accent when the theme has none.
+    static var accent: Color {
+        let store = ThemeStore.shared
+        let dark = store.darkPalette.accent, light = store.lightPalette.accent
+        guard dark != nil || light != nil else { return .accentColor }
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            let hex = isDark(appearance) ? dark : light
+            return hex.map(nsColor) ?? .controlAccentColor
+        })
+    }
     /// Hairlines and quiet strokes.
     static let hairline = Color.primary.opacity(0.08)
 
@@ -33,17 +46,26 @@ enum Theme {
     static let pageTitle = Font.system(size: 30, weight: .bold, design: .rounded)
     static let sectionTitle = Font.system(.title3, design: .rounded).weight(.semibold)
 
-    private static func adaptive(light: UInt32, dark: UInt32) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            let hex = isDark ? dark : light
-            return NSColor(
-                srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
-                green: CGFloat((hex >> 8) & 0xFF) / 255,
-                blue: CGFloat(hex & 0xFF) / 255,
-                alpha: 1
-            )
+    /// A color that takes `surface` from the dark theme in dark appearance and the light theme otherwise.
+    private static func adaptive(_ surface: KeyPath<ThemePalette, UInt32>) -> Color {
+        let store = ThemeStore.shared
+        let dark = store.darkPalette[keyPath: surface], light = store.lightPalette[keyPath: surface]
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            nsColor(isDark(appearance) ? dark : light)
         })
+    }
+
+    private static func isDark(_ appearance: NSAppearance) -> Bool {
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
+
+    static func nsColor(_ hex: UInt32) -> NSColor {
+        NSColor(
+            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: 1
+        )
     }
 }
 
@@ -94,12 +116,12 @@ extension View {
     /// The soft card surface used for tasks, habits and other items.
     func plannerCard(isSelected: Bool = false, isHovered: Bool = false) -> some View {
         background(
-            isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.14)) : AnyShapeStyle(isHovered ? Theme.cardHover : Theme.card),
+            isSelected ? AnyShapeStyle(Theme.accent.opacity(0.14)) : AnyShapeStyle(isHovered ? Theme.cardHover : Theme.card),
             in: RoundedRectangle(cornerRadius: Theme.cardRadius)
         )
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cardRadius)
-                .strokeBorder(isSelected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1.5)
+                .strokeBorder(isSelected ? Theme.accent.opacity(0.7) : .clear, lineWidth: 1.5)
         }
     }
 }
@@ -137,7 +159,7 @@ struct PanelSection<Content: View>: View {
 
 /// A toggle drawn as a soft pill: tinted with `color` while on, a quiet outline while off.
 struct PillToggleStyle: ToggleStyle {
-    var color: Color = .accentColor
+    var color: Color = Theme.accent
 
     func makeBody(configuration: Configuration) -> some View {
         Pill(configuration: configuration, color: color)

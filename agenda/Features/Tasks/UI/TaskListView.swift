@@ -199,7 +199,7 @@ struct TaskListView: View {
         .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cardRadius)
-                .strokeBorder(isQuickAddFocused ? Color.accentColor.opacity(0.6) : Theme.hairline, lineWidth: 1)
+                .strokeBorder(isQuickAddFocused ? Theme.accent.opacity(0.6) : Theme.hairline, lineWidth: 1)
         }
     }
 

@@ -10,7 +10,7 @@ struct DayColumnLabel: View {
         VStack(alignment: .leading, spacing: 1) {
             Text(DayFormatting.dayName(for: day))
                 .font(Theme.sectionTitle)
-                .foregroundStyle(isToday ? Color.accentColor : Color.primary)
+                .foregroundStyle(isToday ? Theme.accent : Color.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(DayFormatting.shortDate(for: day))

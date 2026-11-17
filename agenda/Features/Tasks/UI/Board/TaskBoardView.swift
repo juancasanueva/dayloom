@@ -103,10 +103,10 @@ private struct BoardColumnView<CardMenu: View>: View {
     private var lane: some View {
         let shape = RoundedRectangle(cornerRadius: Self.laneRadius)
         return shape
-            .fill(isTargeted ? AnyShapeStyle(Color.accentColor.opacity(0.1)) : AnyShapeStyle(Theme.card.opacity(0.4)))
+            .fill(isTargeted ? AnyShapeStyle(Theme.accent.opacity(0.1)) : AnyShapeStyle(Theme.card.opacity(0.4)))
             .overlay {
                 shape.strokeBorder(
-                    isTargeted ? Color.accentColor.opacity(0.7) : Theme.hairline,
+                    isTargeted ? Theme.accent.opacity(0.7) : Theme.hairline,
                     lineWidth: isTargeted ? 1.5 : 1
                 )
             }

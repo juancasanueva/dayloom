@@ -285,7 +285,7 @@ private struct SlashMenu: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)
                     .background(
-                        index == highlighted ? Color.accentColor.opacity(0.14) : Color.clear,
+                        index == highlighted ? Theme.accent.opacity(0.14) : Color.clear,
                         in: RoundedRectangle(cornerRadius: 6)
                     )
                     .contentShape(Rectangle())
@@ -309,7 +309,7 @@ private struct EventBlockView: View {
     @State private var isUnavailable = false
 
     var body: some View {
-        let tint = isUnavailable ? Color.secondary : Color.accentColor
+        let tint = isUnavailable ? Color.secondary : Theme.accent
 
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 1.5)

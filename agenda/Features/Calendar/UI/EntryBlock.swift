@@ -56,7 +56,7 @@ struct EntryBlock: View {
         }
         .overlay {
             shape.strokeBorder(
-                isSelected ? Color.accentColor.opacity(0.8) : (isTask ? Theme.hairline : .clear),
+                isSelected ? Theme.accent.opacity(0.8) : (isTask ? Theme.hairline : .clear),
                 lineWidth: isSelected ? 1.5 : 1
             )
         }
