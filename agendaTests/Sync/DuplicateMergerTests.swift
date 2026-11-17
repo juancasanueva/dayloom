@@ -179,15 +179,16 @@ struct DuplicateMergerTests {
     func dailyNoteTieKeepsLowestMergeKeyWhateverTheOrder(reversed: Bool) throws {
         let context = try makeInMemoryContext()
         let day = TestClock.date(2026, 11, 17)
-        var notes = [("b-key", "From B"), ("a-key", "From A")].map { key, text -> Note in
+        var copies = [("b-key", "From B"), ("a-key", "From A")]
+        if reversed { copies.reverse() }
+        // Inserted in the chosen order, so each case really sees a different local order.
+        for (key, text) in copies {
             let note = Note(title: "Tuesday", createdAt: TestClock.date(2026, 11, 17, 7))
             note.dailyDate = day
             note.mergeKey = key
             context.insert(note)
             note.appendBlock(.text, text: text)
-            return note
         }
-        if reversed { notes.reverse() }
         try context.save()
 
         merger.mergeDuplicates(in: context)
