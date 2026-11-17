@@ -26,7 +26,7 @@ struct NoteEditorView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 header
                 ForEach(note.orderedBlocks, id: \.objectID) { block in
                     NoteBlockRow(
@@ -42,9 +42,10 @@ struct NoteEditorView: View {
                     .onTapGesture(perform: focusEnd)
                     .accessibilityHidden(true)
             }
-            .frame(maxWidth: 720, alignment: .leading)
-            .padding(.horizontal, 40)
-            .padding(.top, 28)
+            .lineSpacing(3)
+            .frame(maxWidth: Self.writingWidth, alignment: .leading)
+            .padding(.horizontal, 48)
+            .padding(.top, 8)
             .frame(maxWidth: .infinity)
         }
         .onChange(of: note.title) { markEditedWhileTyping() }
@@ -62,16 +63,22 @@ struct NoteEditorView: View {
         }
     }
 
+    /// A comfortable line length for writing.
+    private static let writingWidth: CGFloat = 680
+
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             if let day = note.dailyDate {
-                Label(DayFormatting.relativeTitle(for: day), systemImage: "sun.max")
-                    .font(.subheadline.weight(.medium))
+                Label(DayFormatting.relativeTitle(for: day), systemImage: "sun.max.fill")
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.orange.opacity(0.14), in: Capsule())
             }
             TextField("Untitled", text: $note.title, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: 32, weight: .bold, design: .rounded))
                 .focused($isTitleFocused)
                 .onKeyPress(.return) {
                     focusFirstBlock()
@@ -80,7 +87,7 @@ struct NoteEditorView: View {
             Text("Edited \(note.updatedAt.formatted(date: .abbreviated, time: .shortened))")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
-                .padding(.bottom, 12)
+                .padding(.bottom, 18)
         }
     }
 

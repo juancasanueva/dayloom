@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// Notes screen: a searchable list of notes beside the selected note's editor.
+/// Notes screen: a searchable column of note cards beside the selected note's editor.
 struct NotesView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -11,23 +11,31 @@ struct NotesView: View {
     @State private var notePendingDeletion: Note?
     /// The note just created with "New Note", whose title gets focus.
     @State private var newNoteID: PersistentIdentifier?
+    @FocusState private var isListFocused: Bool
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
-        HSplitView {
-            noteList
-                .frame(minWidth: 220, idealWidth: 260, maxWidth: 380)
-            detail
-                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .navigationTitle("Notes")
-        .searchable(text: $search, prompt: "Search Notes")
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button("Today's Note", systemImage: "sun.max", action: openTodaysNote)
-                    .help("Open today's note")
-                Button("New Note", systemImage: "square.and.pencil", action: createNote)
-                    .help("New note (⇧⌘N)")
+        VStack(alignment: .leading, spacing: 0) {
+            header
+                .padding(.horizontal, Theme.pagePadding.leading)
+                .padding(.top, Theme.pagePadding.top)
+                .padding(.bottom, 14)
+
+            HSplitView {
+                noteList
+                    .frame(minWidth: 240, idealWidth: 300, maxWidth: 400)
+                detail
+                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+        .plannerPanel()
+        .navigationTitle("Notes")
+        .toolbar(removing: .title)
+        // ⌘F reaches the search field, which lives above the list instead of in the toolbar.
+        .background {
+            Button("Search Notes") { isSearchFocused = true }
+                .keyboardShortcut("f")
+                .hidden()
         }
         .onAppear(perform: consumePendingNewNote)
         .onChange(of: appState.pendingNewNote) { consumePendingNewNote() }
@@ -42,17 +50,84 @@ struct NotesView: View {
         }
     }
 
+    private var header: some View {
+        PageHeader("Notes", subtitle: NotesHeading.subtitle(for: notes)) {
+            HStack(spacing: 8) {
+                Button("Today's Note", systemImage: "sun.max", action: openTodaysNote)
+                    .help("Open today's note")
+                Button("New Note", systemImage: "square.and.pencil", action: createNote)
+                    .help("New note (⇧⌘N)")
+            }
+            .buttonStyle(PageControlStyle())
+        }
+    }
+
     // MARK: List
 
     private var noteList: some View {
-        @Bindable var appState = appState
         let visible = NoteQuery.notes(from: notes, matching: search)
 
-        return List(selection: $appState.selectedNoteID) {
-            ForEach(visible) { note in
-                NoteListRow(note: note)
-                    .tag(note.persistentModelID)
-                    .contextMenu { noteMenu(note) }
+        return VStack(spacing: 10) {
+            searchField
+                .padding(.leading, Theme.pagePadding.leading)
+                .padding(.trailing, 14)
+            noteCards(visible)
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search Notes", text: $search, prompt: Text("Search Notes"))
+                .textFieldStyle(.plain)
+                .labelsHidden()
+                .focused($isSearchFocused)
+                .onExitCommand { search = "" }
+            if !search.isEmpty {
+                Button("Clear Search", systemImage: "xmark.circle.fill") { search = "" }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.6) : Theme.hairline, lineWidth: 1)
+        }
+    }
+
+    private func noteCards(_ visible: [Note]) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 6) {
+                    ForEach(visible) { note in
+                        let id = note.persistentModelID
+                        let isSelected = appState.selectedNoteID == id
+                        NoteCard(note: note, isSelected: isSelected)
+                            .id(id)
+                            .onTapGesture { select(id) }
+                            .contextMenu { noteMenu(note) }
+                            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+                            .accessibilityAction { select(id) }
+                    }
+                }
+                .padding(.leading, Theme.pagePadding.leading)
+                .padding(.trailing, 14)
+                .padding(.top, 4)
+                .padding(.bottom, Theme.pagePadding.bottom)
+            }
+            .focusable()
+            .focusEffectDisabled()
+            .focused($isListFocused)
+            .onKeyPress(.downArrow) { moveSelection(by: 1, in: visible) }
+            .onKeyPress(.upArrow) { moveSelection(by: -1, in: visible) }
+            .onChange(of: appState.selectedNoteID) { _, id in
+                guard let id, visible.contains(where: { $0.persistentModelID == id }) else { return }
+                withAnimation(.snappy) { proxy.scrollTo(id) }
             }
         }
         .overlay {
@@ -113,6 +188,19 @@ struct NotesView: View {
         appState.selectedNoteID = note.persistentModelID
     }
 
+    /// Selects a card from the list and keeps the arrow keys on the list.
+    private func select(_ id: PersistentIdentifier) {
+        appState.selectedNoteID = id
+        isListFocused = true
+    }
+
+    private func moveSelection(by offset: Int, in visible: [Note]) -> KeyPress.Result {
+        let ids = visible.map(\.persistentModelID)
+        guard let next = ListNavigation.step(from: appState.selectedNoteID, in: ids, by: offset) else { return .ignored }
+        appState.selectedNoteID = next
+        return .handled
+    }
+
     private func consumePendingNewNote() {
         guard appState.pendingNewNote else { return }
         appState.pendingNewNote = false
@@ -131,40 +219,75 @@ struct NotesView: View {
     }
 }
 
-private struct NoteListRow: View {
+/// The short line under the Notes title: how many notes there are, and how many are pinned.
+enum NotesHeading {
+    static func subtitle(for notes: [Note]) -> String {
+        guard !notes.isEmpty else { return "No notes yet" }
+        let count = notes.count == 1 ? "1 note" : "\(notes.count) notes"
+        let pinned = notes.filter(\.isPinned).count
+        return pinned == 0 ? count : "\(count) · \(pinned) pinned"
+    }
+}
+
+/// The line a note card shows under its title.
+enum NotePreview {
+    /// The first line of text that isn't already shown as the title, or "" when there is none.
+    static func line(for note: Note) -> String {
+        let title = note.displayTitle
+        return note.plainText
+            .split(separator: "\n")
+            .lazy
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty && $0 != title } ?? ""
+    }
+}
+
+/// One note as a soft card: title with its daily or pinned mark, a preview line, and when it was edited.
+private struct NoteCard: View {
     let note: Note
+    let isSelected: Bool
+
+    @State private var isHovered = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 5) {
+        let preview = NotePreview.line(for: note)
+
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if note.dailyDate != nil {
-                    Image(systemName: "sun.max").foregroundStyle(.orange)
+                    Image(systemName: "sun.max.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .accessibilityLabel("Daily note")
                 }
                 Text(note.displayTitle)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 if note.isPinned {
                     Image(systemName: "pin.fill")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.accentColor)
                         .accessibilityLabel("Pinned")
                 }
             }
-            Text(subtitle)
+            if !preview.isEmpty {
+                Text(preview)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Text(DayFormatting.relativeTitle(for: note.updatedAt))
                 .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 3)
-    }
-
-    private var subtitle: String {
-        let preview = note.plainText
-            .split(separator: "\n")
-            .first { $0.trimmingCharacters(in: .whitespaces) != note.displayTitle }
-            .map(String.init) ?? ""
-        let day = DayFormatting.relativeTitle(for: note.updatedAt)
-        return preview.isEmpty ? day : "\(day) · \(preview)"
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .plannerCard(isSelected: isSelected, isHovered: isHovered)
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
+        .onHover { isHovered = $0 }
+        .animation(.easeOut(duration: 0.12), value: isHovered)
+        .accessibilityElement(children: .combine)
     }
 }

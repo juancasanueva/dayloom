@@ -66,7 +66,11 @@ struct NoteBlockRow: View {
     private var content: some View {
         switch block.kind {
         case .divider:
-            Divider().padding(.vertical, 10)
+            Rectangle()
+                .fill(Theme.hairline)
+                .frame(height: 1)
+                .padding(.vertical, 12)
+                .accessibilityHidden(true)
         case .event:
             EventBlockView(block: block)
         case .text, .heading, .bullet, .checklist, .task:
@@ -77,29 +81,42 @@ struct NoteBlockRow: View {
     private var textRow: some View {
         let task = block.task
         let isDone = task?.isDone ?? (block.kind == .checklist && block.isChecked)
+        let isTask = task != nil
         return HStack(alignment: .firstTextBaseline, spacing: 8) {
             leadingAccessory
-            field(task.map(taskTitle) ?? $block.text, prompt: prompt, font: block.kind == .heading ? .title2.weight(.semibold) : .body)
+            field(task.map(taskTitle) ?? $block.text, prompt: prompt, font: block.kind == .heading ? Self.headingFont : Self.bodyFont)
                 .strikethrough(isDone)
                 .foregroundStyle(isDone ? .secondary : .primary)
             if let task {
                 taskAccessories(task)
             }
         }
-        .padding(.top, block.kind == .heading ? 8 : 0)
+        // A linked task sits on a soft tile so it reads apart from a plain checklist item.
+        .padding(.horizontal, isTask ? 10 : 0)
+        .padding(.vertical, isTask ? 6 : 0)
+        .background(isTask ? Theme.card : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.top, block.kind == .heading ? 14 : 0)
     }
+
+    private static let bodyFont = Font.system(size: 14)
+    private static let headingFont = Font.system(size: 22, weight: .bold, design: .rounded)
 
     @ViewBuilder
     private var leadingAccessory: some View {
         switch block.kind {
         case .bullet:
-            Text("•").foregroundStyle(.secondary)
+            Text("•")
+                .fontWeight(.bold)
+                .foregroundStyle(.secondary)
         case .checklist:
             Button {
                 block.isChecked.toggle()
             } label: {
-                Image(systemName: block.isChecked ? "checkmark.square.fill" : "square")
-                    .foregroundStyle(block.isChecked ? Color.accentColor : Color.secondary)
+                // The same check as a task's completion button.
+                Image(systemName: block.isChecked ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(block.isChecked ? "Uncheck" : "Check")
@@ -127,8 +144,11 @@ struct NoteBlockRow: View {
     private func taskAccessories(_ task: TaskItem) -> some View {
         if let due = task.dueDate {
             Text(DayFormatting.relativeTitle(for: due))
-                .font(.caption)
+                .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Theme.hairline, in: Capsule())
         }
         Button("Show Task Details", systemImage: "info.circle") {
             _ = perform(.openTask(task))
@@ -265,7 +285,7 @@ private struct SlashMenu: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)
                     .background(
-                        index == highlighted ? Color.accentColor.opacity(0.18) : Color.clear,
+                        index == highlighted ? Color.accentColor.opacity(0.14) : Color.clear,
                         in: RoundedRectangle(cornerRadius: 6)
                     )
                     .contentShape(Rectangle())
@@ -276,8 +296,8 @@ private struct SlashMenu: View {
         }
         .padding(6)
         .frame(width: 240)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.separator))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
+        .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius).strokeBorder(Theme.hairline))
         .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
     }
 }
@@ -289,10 +309,12 @@ private struct EventBlockView: View {
     @State private var isUnavailable = false
 
     var body: some View {
+        let tint = isUnavailable ? Color.secondary : Color.accentColor
+
         HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(isUnavailable ? Color.secondary : Color.accentColor)
-                .frame(width: 4)
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(tint)
+                .frame(width: 3)
             VStack(alignment: .leading, spacing: 2) {
                 Text(block.text.isEmpty ? "Event" : block.text)
                     .fontWeight(.medium)
@@ -307,11 +329,18 @@ private struct EventBlockView: View {
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
                     .help("This event was moved or deleted in Calendar.")
+            } else {
+                Image(systemName: "calendar")
+                    .foregroundStyle(tint)
+                    .accessibilityHidden(true)
             }
         }
-        .padding(8)
+        .padding(.vertical, 8)
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: Theme.cardRadius))
+        .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
         .task(id: calendarModel.access) { refresh() }
     }
