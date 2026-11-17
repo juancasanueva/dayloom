@@ -12,7 +12,12 @@ enum SidebarSelection: Hashable {
 /// Window-level navigation state shared by the sidebar, lists, calendar, and menu commands.
 @Observable
 final class AppState {
-    var selection: SidebarSelection? = .tasks(.today)
+    /// Moving to another view drops the selected task, so its details don't linger next to a list that doesn't show it.
+    var selection: SidebarSelection? = .tasks(.today) {
+        didSet {
+            if selection != oldValue { select(task: nil) }
+        }
+    }
     private(set) var selectedTaskID: PersistentIdentifier?
     var isInspectorPresented = false
     var isLauncherPresented = false
