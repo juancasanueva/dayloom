@@ -61,6 +61,10 @@ struct SidebarView: View {
         // The sidebar sits on the same warm canvas as the content panel beside it.
         .scrollContentBackground(.hidden)
         .background(Theme.canvas)
+        // A little air between the window controls and the first row.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: 24)
+        }
         .navigationSplitViewColumnWidth(min: 190, ideal: 220)
         .safeAreaInset(edge: .bottom) {
             SettingsLink {
