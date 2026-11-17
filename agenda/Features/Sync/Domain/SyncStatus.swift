@@ -40,10 +40,10 @@ enum SyncStatus: Equatable {
         case .checking: "Looking up your iCloud account."
         case .on: "Your tasks, notes, and habits stay up to date on every Mac signed in to this iCloud account."
         case .signedOut: "Sign in to iCloud in System Settings to sync. Until then, everything stays on this Mac."
-        case .restricted: "This Mac's settings don't allow iCloud for Agenda. Your data stays on this Mac."
-        case .unavailable: "Agenda syncs again once iCloud is reachable. Your changes are kept on this Mac."
-        case .problem: "Your changes are kept on this Mac, and Agenda keeps retrying."
-        case .localOnly: "iCloud couldn't start when Agenda opened, so changes stay on this Mac. Quit and reopen Agenda to try again."
+        case .restricted: "This Mac's settings don't allow iCloud for Dayloom. Your data stays on this Mac."
+        case .unavailable: "Dayloom syncs again once iCloud is reachable. Your changes are kept on this Mac."
+        case .problem: "Your changes are kept on this Mac, and Dayloom keeps retrying."
+        case .localOnly: "iCloud couldn't start when Dayloom opened, so changes stay on this Mac. Quit and reopen Dayloom to try again."
         }
     }
 

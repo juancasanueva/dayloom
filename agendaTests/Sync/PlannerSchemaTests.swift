@@ -77,7 +77,7 @@ struct PlannerSchemaTests {
 
         #expect(requested == [nil])
         #expect(!store.syncs)
-        #expect(store.syncError == "This copy of Agenda isn't signed for iCloud.")
+        #expect(store.syncError == "This copy of Dayloom isn't signed for iCloud.")
     }
 
     @Test func entitlementCheckRunsWithoutCrashing() {

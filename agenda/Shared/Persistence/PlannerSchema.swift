@@ -67,7 +67,7 @@ enum PlannerSchema {
     ) -> Store {
         let syncError: String
         if !inMemory && !canUseICloud {
-            syncError = "This copy of Agenda isn't signed for iCloud."
+            syncError = "This copy of Dayloom isn't signed for iCloud."
         } else {
             do {
                 let container = try makeContainer(configuration(inMemory: inMemory))

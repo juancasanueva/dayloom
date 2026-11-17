@@ -24,6 +24,15 @@ struct SyncStatusTests {
         }
     }
 
+    @Test func statusCopyUsesTheAppName() {
+        let statuses = [SyncStatus.checking, .on, .signedOut, .restricted, .unavailable, .problem, .localOnly]
+        for status in statuses {
+            #expect(!status.title.contains("Agenda"))
+            #expect(!status.detail.contains("Agenda"))
+        }
+        #expect(SyncStatus.localOnly.detail.contains("reopen Dayloom"))
+    }
+
     @Test func modelStartsCheckingThenReportsTheAccount() async {
         let model = SyncStatusModel(provider: StaticAccountStatusProvider(status: .noAccount))
         #expect(model.status == .checking)
