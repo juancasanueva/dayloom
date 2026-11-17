@@ -60,62 +60,81 @@ struct NoteBlockRow: View {
 
     // MARK: Kinds
 
+    /// Text-like and task blocks share one text field, so changing the kind while typing
+    /// (a markdown shortcut, a slash command) keeps the field and its keystrokes intact.
     @ViewBuilder
     private var content: some View {
         switch block.kind {
-        case .text:
-            field($block.text, prompt: isFocused ? "Type / for blocks" : nil)
-        case .heading:
-            field($block.text, prompt: "Heading", font: .title2.weight(.semibold))
-                .padding(.top, 8)
-        case .bullet:
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("•").foregroundStyle(.secondary)
-                field($block.text, prompt: "List item")
-            }
-        case .checklist:
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Button {
-                    block.isChecked.toggle()
-                } label: {
-                    Image(systemName: block.isChecked ? "checkmark.square.fill" : "square")
-                        .foregroundStyle(block.isChecked ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(block.isChecked ? "Uncheck" : "Check")
-                field($block.text, prompt: "To-do")
-                    .strikethrough(block.isChecked)
-                    .foregroundStyle(block.isChecked ? .secondary : .primary)
-            }
         case .divider:
             Divider().padding(.vertical, 10)
-        case .task:
-            if let task = block.task {
-                taskContent(task)
-            }
         case .event:
             EventBlockView(block: block)
+        case .text, .heading, .bullet, .checklist, .task:
+            textRow
         }
     }
 
-    private func taskContent(_ task: TaskItem) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            CompletionButton(task: task)
-            field(taskTitle(task), prompt: "Task name")
-                .strikethrough(task.isDone)
-                .foregroundStyle(task.isDone ? .secondary : .primary)
-            if let due = task.dueDate {
-                Text(DayFormatting.relativeTitle(for: due))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private var textRow: some View {
+        let task = block.task
+        let isDone = task?.isDone ?? (block.kind == .checklist && block.isChecked)
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            leadingAccessory
+            field(task.map(taskTitle) ?? $block.text, prompt: prompt, font: block.kind == .heading ? .title2.weight(.semibold) : .body)
+                .strikethrough(isDone)
+                .foregroundStyle(isDone ? .secondary : .primary)
+            if let task {
+                taskAccessories(task)
             }
-            Button("Show Task Details", systemImage: "info.circle") {
-                _ = perform(.openTask(task))
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
         }
-        .padding(.vertical, 2)
+        .padding(.top, block.kind == .heading ? 8 : 0)
+    }
+
+    @ViewBuilder
+    private var leadingAccessory: some View {
+        switch block.kind {
+        case .bullet:
+            Text("•").foregroundStyle(.secondary)
+        case .checklist:
+            Button {
+                block.isChecked.toggle()
+            } label: {
+                Image(systemName: block.isChecked ? "checkmark.square.fill" : "square")
+                    .foregroundStyle(block.isChecked ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(block.isChecked ? "Uncheck" : "Check")
+        case .task:
+            if let task = block.task {
+                CompletionButton(task: task)
+            }
+        case .text, .heading, .divider, .event:
+            EmptyView()
+        }
+    }
+
+    private var prompt: String {
+        switch block.kind {
+        case .text: isFocused ? "Type / for blocks" : ""
+        case .heading: "Heading"
+        case .bullet: "List item"
+        case .checklist: "To-do"
+        case .task: "Task name"
+        case .divider, .event: ""
+        }
+    }
+
+    @ViewBuilder
+    private func taskAccessories(_ task: TaskItem) -> some View {
+        if let due = task.dueDate {
+            Text(DayFormatting.relativeTitle(for: due))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        Button("Show Task Details", systemImage: "info.circle") {
+            _ = perform(.openTask(task))
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
         .onAppear { block.syncTaskSnapshot() }
         .onChange(of: task.isDone) { block.syncTaskSnapshot() }
     }
@@ -128,8 +147,8 @@ struct NoteBlockRow: View {
         )
     }
 
-    private func field(_ text: Binding<String>, prompt: String?, font: Font = .body) -> some View {
-        TextField("Block", text: text, selection: $selection, prompt: prompt.map { Text($0) }, axis: .vertical)
+    private func field(_ text: Binding<String>, prompt: String, font: Font) -> some View {
+        TextField("", text: text, selection: $selection, prompt: Text(prompt), axis: .vertical)
             .labelsHidden()
             .textFieldStyle(.plain)
             .font(font)
@@ -165,8 +184,18 @@ struct NoteBlockRow: View {
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
         let text = editedText
         let commands = slashCommands ?? []
+        // Arrow keys arrive tagged with the numeric-pad/function flags; only real modifiers matter.
+        let modifiers = press.modifiers.intersection([.shift, .control, .option, .command])
+        // The Backspace key sends U+007F on the Mac.
+        let isBackspace = press.key == .delete || press.characters == "\u{7F}" || press.characters == "\u{8}"
+
+        if isBackspace {
+            guard modifiers.isEmpty, isCaretAtStart(in: text) else { return .ignored }
+            return perform(.backspaceAtStart) ? .handled : .ignored
+        }
+
         switch press.key {
-        case .return where press.modifiers.isEmpty:
+        case .return where modifiers.isEmpty:
             if !commands.isEmpty {
                 _ = perform(.command(commands[min(highlightedCommand, commands.count - 1)]))
             } else {
@@ -174,17 +203,13 @@ struct NoteBlockRow: View {
             }
             return .handled
 
-        case .delete where press.modifiers.isEmpty:
-            guard isCaretAtStart(in: text) else { return .ignored }
-            return perform(.backspaceAtStart) ? .handled : .ignored
-
         case .upArrow, .downArrow:
             let isUp = press.key == .upArrow
-            if press.modifiers == [.option, .command] {
+            if modifiers == [.option, .command] {
                 _ = perform(.move(isUp ? -1 : 1))
                 return .handled
             }
-            guard press.modifiers.isEmpty else { return .ignored }
+            guard modifiers.isEmpty else { return .ignored }
             if !commands.isEmpty {
                 highlightedCommand = (highlightedCommand + (isUp ? -1 : 1) + commands.count) % commands.count
                 return .handled

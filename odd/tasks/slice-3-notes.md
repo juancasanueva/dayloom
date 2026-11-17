@@ -42,7 +42,7 @@ Launcher search of notes, nested/indented blocks, rich inline formatting, images
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
 | T1 | S1, S3.2 | inline | done | RED (missing types) → GREEN 156 tests; commit 2b54ff0 |
-| T2 | S2, S3.1 | inline | done (UI unverified) | RED→GREEN `events(on:)`; 158 tests, 0 warnings; commit 8dbf773 |
+| T2 | S2, S3.1 | inline | done | RED→GREEN `events(on:)`; app-verified (L5–L6); 159 tests, 0 warnings; commits 8dbf773, fix in L5 commit |
 
 Route evidence: no Writer trigger. T2 depends on T1, so they aren't independent units; the parent writes both inline.
 
@@ -52,3 +52,5 @@ Route evidence: no Writer trigger. T2 depends on T1, so they aren't independent 
 - L2: T1 committed 2b54ff0 (39 domain tests). T2 committed 8dbf773 (UI + `WeekCalendarModel.events(on:)`, 2 tests).
 - L3: Migration: app launched on the slice-2 store with the new schema, no crash or log errors.
 - L4: UI not verified: the Mac screen was locked during the run, so screenshots were black and synthetic keystrokes went to the lock screen. Pending checks: typing flow (Return/Backspace/arrows/shortcuts), caret placement after programmatic focus, slash menu, task and event blocks, list pin/delete.
+- L5 (2026-11-17, user): "unlocked, go ahead". App run found and fixed: (a) a kind change swapped the TextField, losing keystrokes and leaving `# ` in headings → one shared field for text-like/task kinds; shortcut applied on the next run-loop turn; (b) edited time stamped on every keystroke re-rendered the screen and dropped keys → at most every 30 s while typing; (c) arrow keys carry numeric-pad/function flags and Backspace sends U+007F, so ↑/↓, ⌥⌘↑/↓ and Backspace-at-start never fired → modifiers and Backspace normalized; (d) Backspace into a task now puts the caret at the end of its title (RED→GREEN test).
+- L6: Verified in the app at human typing speed: `# ` heading, `- ` bullet continuing on Return, empty-item Return ends the list, `[] ` checklist, `/li` filtered menu with ↓+Return, `/task` task block in the Inbox with live title, Backspace merge into task title, ↑ navigation, ⌥⌘↓ move, info button opens inspector, completing from the note (Inbox 2→1), Today's Note titled with the date, `/event` opens the picker (access not granted → connect banner), pin, delete with confirmation, search on block text. Not verified: picking an event (needs calendar permission, the user's call).

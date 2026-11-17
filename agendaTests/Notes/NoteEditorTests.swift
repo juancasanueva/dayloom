@@ -199,6 +199,18 @@ struct NoteEditorTests {
         #expect(focus?.block === note.orderedBlocks[0])
     }
 
+    @Test func backspaceInEmptyBlockAfterTaskFocusesEndOfTaskTitle() throws {
+        let context = try makeInMemoryContext()
+        let note = makeNote([(.checklist, "Book hotel"), (.text, "")], in: context)
+        editor.convertToTask(note.orderedBlocks[0], in: context)
+
+        let focus = editor.backspaceAtStart(note.orderedBlocks[1])
+
+        #expect(note.orderedBlocks.map(\.kind) == [.task])
+        #expect(focus?.block === note.orderedBlocks[0])
+        #expect(focus?.caret == 10)
+    }
+
     @Test func backspaceInFirstTextBlockDoesNothing() throws {
         let context = try makeInMemoryContext()
         let note = makeNote([(.text, "only")], in: context)

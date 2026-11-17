@@ -124,7 +124,7 @@ struct NoteEditor {
         case .task, .event:
             guard block.text.isEmpty else { return nil }
             delete(block)
-            return NoteFocus(block: previous, caret: 0)
+            return NoteFocus(block: previous, caret: previous.text.count)
         }
     }
 

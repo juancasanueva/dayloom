@@ -47,7 +47,7 @@ struct NoteEditorView: View {
             .padding(.top, 28)
             .frame(maxWidth: .infinity)
         }
-        .onChange(of: note.title) { note.updatedAt = .now }
+        .onChange(of: note.title) { markEditedWhileTyping() }
         .onAppear {
             if focusesTitle {
                 isTitleFocused = true
@@ -89,9 +89,13 @@ struct NoteEditorView: View {
     private func handle(_ action: BlockAction, on block: NoteBlock) -> Bool {
         switch action {
         case .textChanged:
-            note.updatedAt = .now
-            if let focus = editor.applyShortcut(to: block) {
-                place(focus)
+            markEditedWhileTyping()
+            // Applied on the next turn: rewriting the text inside the field's own change
+            // callback gets overwritten by the field.
+            Task { @MainActor in
+                if let focus = editor.applyShortcut(to: block) {
+                    place(focus)
+                }
             }
         case .split(let caret):
             place(editor.split(block, at: caret))
@@ -129,8 +133,19 @@ struct NoteEditorView: View {
         return true
     }
 
+    /// Re-stamping the note on every keystroke re-renders the whole screen and can drop
+    /// keys typed during the refresh, so typing refreshes the edited time at most every 30 seconds.
+    private func markEditedWhileTyping() {
+        let now = Date.now
+        if now.timeIntervalSince(note.updatedAt) > 30 {
+            note.updatedAt = now
+        }
+    }
+
     private func place(_ focus: NoteFocus) {
         let id = focus.block.objectID
+        // The focused field already shows the edit; moving its caret would fight the typing.
+        guard focusedBlock != id else { return }
         caretRequest = CaretRequest(blockID: id, caret: focus.caret, serial: (caretRequest?.serial ?? 0) + 1)
         focusedBlock = id
     }
