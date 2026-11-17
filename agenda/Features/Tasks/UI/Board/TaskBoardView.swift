@@ -1,41 +1,46 @@
 import SwiftData
 import SwiftUI
 
-/// Three status columns side by side. Cards are dragged between columns to change their status.
+/// Three status lanes side by side. Cards are dragged between lanes to change their status.
 struct TaskBoardView<CardMenu: View>: View {
     let columns: [BoardColumn]
-    let isOverdue: (TaskItem) -> Bool
+    let emphasis: (TaskItem) -> TimeEmphasis
     /// Handles dropped payloads for a column and reports whether anything moved.
     let onDrop: ([String], TaskStatus) -> Bool
     @ViewBuilder let cardMenu: (TaskItem) -> CardMenu
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             ForEach(columns) { column in
-                BoardColumnView(column: column, isOverdue: isOverdue, onDrop: onDrop, cardMenu: cardMenu)
+                BoardColumnView(column: column, emphasis: emphasis, onDrop: onDrop, cardMenu: cardMenu)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        // Lanes start where the page header starts.
+        .padding(.top, 14)
+        .padding(.leading, Theme.pagePadding.leading)
+        .padding(.trailing, Theme.pagePadding.trailing)
+        .padding(.bottom, Theme.pagePadding.bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
 private struct BoardColumnView<CardMenu: View>: View {
     let column: BoardColumn
-    let isOverdue: (TaskItem) -> Bool
+    let emphasis: (TaskItem) -> TimeEmphasis
     let onDrop: ([String], TaskStatus) -> Bool
     let cardMenu: (TaskItem) -> CardMenu
 
     @Environment(AppState.self) private var appState
     @State private var isTargeted = false
 
+    private static var laneRadius: CGFloat { 14 }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             header
 
             ScrollView {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: 6) {
                     ForEach(column.tasks) { task in
                         card(for: task)
                     }
@@ -55,7 +60,7 @@ private struct BoardColumnView<CardMenu: View>: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(background)
+        .background(lane)
         .dropDestination(for: String.self) { payloads, _ in
             withAnimation(.snappy) { onDrop(payloads, column.status) }
         } isTargeted: { targeted in
@@ -66,39 +71,44 @@ private struct BoardColumnView<CardMenu: View>: View {
     }
 
     private var header: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 7) {
             Image(systemName: symbol)
                 .foregroundStyle(tint)
             Text(column.status.title)
-                .font(.headline)
+                .font(.system(.headline, design: .rounded))
             Text(column.tasks.count, format: .number)
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 1)
-                .background(.quaternary, in: Capsule())
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Theme.hairline, in: Capsule())
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 4)
+        .padding(.top, 2)
     }
 
     private func card(for task: TaskItem) -> some View {
         let id = task.persistentModelID
-        return BoardCardView(task: task, isOverdue: isOverdue(task), isSelected: appState.selectedTaskID == id)
+        return BoardCardView(task: task, emphasis: emphasis(task), isSelected: appState.selectedTaskID == id)
             .onTapGesture { appState.select(task: id) }
             .contextMenu { cardMenu(task) }
             .draggable(TaskBoard.dragPayload(for: task) ?? "") {
-                BoardCardView(task: task, isOverdue: isOverdue(task), isSelected: false)
+                BoardCardView(task: task, emphasis: emphasis(task), isSelected: false)
                     .frame(width: 240)
             }
     }
 
-    private var background: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(isTargeted ? AnyShapeStyle(tint.opacity(0.14)) : AnyShapeStyle(.quaternary.opacity(0.5)))
+    /// A soft lane on the panel; it lights up in the accent colour while a card hovers over it.
+    private var lane: some View {
+        let shape = RoundedRectangle(cornerRadius: Self.laneRadius)
+        return shape
+            .fill(isTargeted ? AnyShapeStyle(Color.accentColor.opacity(0.1)) : AnyShapeStyle(Theme.card.opacity(0.4)))
             .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(tint.opacity(isTargeted ? 0.7 : 0), lineWidth: 2)
+                shape.strokeBorder(
+                    isTargeted ? Color.accentColor.opacity(0.7) : Theme.hairline,
+                    lineWidth: isTargeted ? 1.5 : 1
+                )
             }
     }
 

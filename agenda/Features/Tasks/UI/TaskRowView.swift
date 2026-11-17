@@ -55,23 +55,15 @@ struct TaskRowView: View {
         dueText != nil || task.scheduledStart != nil || task.repeatRule.repeats || !(task.subtasks ?? []).isEmpty || !(task.tags ?? []).isEmpty
     }
 
-    private var timeColor: Color {
-        switch emphasis {
-        case .overdue: .red
-        case .today: .accentColor
-        case .normal: .secondary
-        }
-    }
-
     private var metadata: some View {
         HStack(spacing: 10) {
             if let dueText {
                 Label(dueText, systemImage: "calendar")
-                    .foregroundStyle(timeColor)
+                    .foregroundStyle(emphasis.color)
             }
             if let start = task.scheduledStart {
                 Label(start.formatted(date: .omitted, time: .shortened), systemImage: "clock")
-                    .foregroundStyle(timeColor)
+                    .foregroundStyle(emphasis.color)
                     .fontWeight(emphasis == .normal ? .regular : .semibold)
             }
             if task.repeatRule.repeats {

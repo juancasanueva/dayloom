@@ -141,7 +141,7 @@ struct TaskListView: View {
     private func board(query: TaskQuery) -> some View {
         TaskBoardView(
             columns: TaskBoard(now: query.now, calendar: query.calendar).columns(from: allTasks, in: scope),
-            isOverdue: query.isOverdue,
+            emphasis: query.timeEmphasis(for:),
             onDrop: { payloads, status in
                 TaskBoard().drop(payloads, onto: status, from: allTasks)
             },

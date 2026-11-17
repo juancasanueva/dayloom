@@ -27,6 +27,17 @@ extension TagColor {
     }
 }
 
+extension TimeEmphasis {
+    /// Overdue in red, later today in the accent color, otherwise quiet.
+    var color: Color {
+        switch self {
+        case .overdue: .red
+        case .today: .accentColor
+        case .normal: .secondary
+        }
+    }
+}
+
 extension EntryTint {
     var color: Color {
         switch self {

@@ -1,64 +1,73 @@
 import SwiftUI
 
-/// A compact task card: title, dates, priority, subtask progress, and tags.
+/// A task card on the board: the same soft card as the list, with tags on their own line.
 struct BoardCardView: View {
     let task: TaskItem
-    let isOverdue: Bool
+    let emphasis: TimeEmphasis
     let isSelected: Bool
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                CompletionButton(task: task)
+    @State private var isHovered = false
 
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            CompletionButton(task: task)
+
+            VStack(alignment: .leading, spacing: 6) {
                 Text(task.title.isEmpty ? "Untitled" : task.title)
+                    .fontWeight(.medium)
                     .strikethrough(task.isDone)
                     .foregroundStyle(task.isDone ? .secondary : .primary)
                     .lineLimit(3)
+                    .padding(.top, 2)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                if task.priority != .none && !task.isDone {
-                    Image(systemName: "flag.fill")
-                        .font(.caption)
-                        .foregroundStyle(task.priority.color)
-                        .accessibilityLabel("\(task.priority.title) priority")
+                if hasDetails {
+                    details
+                }
+
+                if !(task.tags ?? []).isEmpty {
+                    tags
                 }
             }
 
-            if hasDetails {
-                details
-            }
-
-            if !(task.tags ?? []).isEmpty {
-                tags
+            if task.priority != .none && !task.isDone {
+                Image(systemName: "flag.fill")
+                    .font(.caption)
+                    .foregroundStyle(task.priority.color)
+                    .padding(.top, 4)
+                    .accessibilityLabel("\(task.priority.title) priority")
             }
         }
-        .padding(10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background, in: RoundedRectangle(cornerRadius: 9))
-        .overlay {
-            RoundedRectangle(cornerRadius: 9)
-                .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: isSelected ? 2 : 1)
-        }
-        .shadow(color: .black.opacity(0.06), radius: 1, y: 1)
-        .contentShape(RoundedRectangle(cornerRadius: 9))
+        .plannerCard(isSelected: isSelected, isHovered: isHovered)
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
+        .onHover { isHovered = $0 }
+        .animation(.easeOut(duration: 0.12), value: isHovered)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
     private var hasDetails: Bool {
-        task.dueDate != nil || task.scheduledStart != nil || task.subtaskProgress.total > 0
+        task.dueDate != nil || task.scheduledStart != nil || task.repeatRule.repeats || task.subtaskProgress.total > 0
     }
 
     private var details: some View {
         HStack(spacing: 10) {
             if let due = task.dueDate {
                 Label(DayFormatting.relativeTitle(for: due), systemImage: "calendar")
-                    .foregroundStyle(isOverdue ? Color.red : Color.secondary)
+                    .foregroundStyle(emphasis.color)
             }
             if let start = task.scheduledStart {
                 Label(scheduleText(for: start), systemImage: "clock")
+                    .foregroundStyle(emphasis.color)
+                    .fontWeight(emphasis == .normal ? .regular : .semibold)
+            }
+            if task.repeatRule.repeats {
+                Image(systemName: "repeat")
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("Repeats \(task.repeatRule.title.lowercased())")
             }
             let progress = task.subtaskProgress
             if progress.total > 0 {
