@@ -32,7 +32,7 @@ struct TaskRowView: View {
     }
 
     private var hasMetadata: Bool {
-        task.dueDate != nil || task.scheduledStart != nil || !(task.subtasks ?? []).isEmpty || !(task.tags ?? []).isEmpty
+        task.dueDate != nil || task.scheduledStart != nil || task.repeatRule.repeats || !(task.subtasks ?? []).isEmpty || !(task.tags ?? []).isEmpty
     }
 
     private var metadata: some View {
@@ -44,6 +44,11 @@ struct TaskRowView: View {
             if let start = task.scheduledStart {
                 Label(start.formatted(date: .omitted, time: .shortened), systemImage: "clock")
                     .foregroundStyle(.secondary)
+            }
+            if task.repeatRule.repeats {
+                Image(systemName: "repeat")
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Repeats \(task.repeatRule.title.lowercased())")
             }
             let progress = task.subtaskProgress
             if progress.total > 0 {

@@ -100,6 +100,14 @@ struct TaskDetailView: View {
                     }
                 }
             }
+
+            Picker("Repeat", selection: $task.repeatRule) {
+                ForEach(RepeatRule.allCases) { rule in
+                    Text(rule.title).tag(rule)
+                }
+            }
+            .disabled(!task.canRepeat)
+            .help(task.canRepeat ? "Creates the next occurrence when this task is completed." : "Add a due date or schedule to repeat this task.")
         }
     }
 

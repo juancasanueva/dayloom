@@ -73,4 +73,124 @@ struct TaskItemTests {
         #expect(TaskPriority.low < .medium)
         #expect(TaskPriority.medium < .high)
     }
+
+    // MARK: Recurrence
+
+    private func topLevelTasks(in context: ModelContext) throws -> [TaskItem] {
+        try context.fetch(FetchDescriptor<TaskItem>()).filter { $0.parent == nil }
+    }
+
+    @Test func newTaskDoesNotRepeat() {
+        #expect(TaskItem(title: "Once").repeatRule == .none)
+    }
+
+    @Test func completingRepeatingTaskSpawnsNextOpenOccurrence() throws {
+        let context = try makeInMemoryContext()
+        let home = Tag(name: "Home", color: .green)
+        let chores = Tag(name: "Chores", color: .orange)
+        context.insert(home)
+        context.insert(chores)
+        let task = TaskItem(
+            title: "Water plants",
+            dueDate: TestClock.date(2026, 11, 17),
+            scheduledStart: TestClock.date(2026, 11, 17, 9, 0),
+            priority: .high
+        )
+        context.insert(task)
+        task.notes = "Balcony first"
+        task.scheduledDuration = 45 * 60
+        task.repeatRule = .daily
+        task.tags = [home, chores]
+        let first = task.addSubtask(title: "Fill can")
+        task.addSubtask(title: "Check soil")
+        first.setCompleted(true, at: TestClock.now)
+
+        task.setCompleted(true, at: TestClock.now, calendar: TestClock.calendar)
+
+        let spawned = try #require(try topLevelTasks(in: context).first { $0 !== task })
+        #expect(try topLevelTasks(in: context).count == 2)
+        #expect(spawned.title == "Water plants")
+        #expect(spawned.notes == "Balcony first")
+        #expect(spawned.priority == .high)
+        #expect(spawned.scheduledDuration == 45 * 60)
+        #expect(spawned.dueDate == TestClock.date(2026, 11, 18))
+        #expect(spawned.scheduledStart == TestClock.date(2026, 11, 18, 9, 0))
+        #expect(spawned.repeatRule == .daily)
+        #expect(spawned.status == .todo)
+        #expect(spawned.completedAt == nil)
+        #expect(spawned.orderedTags.map(\.name) == ["Chores", "Home"])
+        #expect(spawned.orderedSubtasks.map(\.title) == ["Fill can", "Check soil"])
+        #expect(spawned.orderedSubtasks.allSatisfy { !$0.isDone })
+        #expect(spawned.orderedSubtasks.allSatisfy { $0.parent === spawned })
+
+        #expect(task.status == .done)
+        #expect(task.repeatRule == .none)
+        #expect(task.orderedSubtasks.map(\.title) == ["Fill can", "Check soil"])
+        #expect(task.orderedTags.map(\.name) == ["Chores", "Home"])
+    }
+
+    @Test func completingAgainAfterReopeningSpawnsOnlyOnce() throws {
+        let context = try makeInMemoryContext()
+        let task = TaskItem(title: "Stand-up", dueDate: TestClock.date(2026, 11, 17))
+        context.insert(task)
+        task.repeatRule = .weekly
+
+        task.updateStatus(.done, at: TestClock.now, calendar: TestClock.calendar)
+        task.updateStatus(.todo, at: TestClock.now, calendar: TestClock.calendar)
+        task.updateStatus(.done, at: TestClock.now, calendar: TestClock.calendar)
+
+        let all = try topLevelTasks(in: context)
+        #expect(all.count == 2)
+        #expect(all.filter { $0 !== task }.map(\.dueDate) == [TestClock.date(2026, 11, 24)])
+    }
+
+    @Test func weekdaysTaskDueFridaySpawnsOnMonday() throws {
+        let context = try makeInMemoryContext()
+        let task = TaskItem(title: "Report", dueDate: TestClock.date(2026, 11, 20))
+        context.insert(task)
+        task.repeatRule = .weekdays
+
+        task.setCompleted(true, at: TestClock.now, calendar: TestClock.calendar)
+
+        let spawned = try #require(try topLevelTasks(in: context).first { $0 !== task })
+        #expect(spawned.dueDate == TestClock.date(2026, 11, 23))
+        #expect(spawned.scheduledStart == nil)
+    }
+
+    @Test func repeatingTaskWithoutDatesSpawnsNothing() throws {
+        let context = try makeInMemoryContext()
+        let task = TaskItem(title: "Someday")
+        context.insert(task)
+        task.repeatRule = .daily
+
+        task.setCompleted(true, at: TestClock.now, calendar: TestClock.calendar)
+
+        #expect(try topLevelTasks(in: context).count == 1)
+        #expect(task.isDone)
+    }
+
+    @Test func repeatingTaskOutsideAContextSpawnsNothing() {
+        let task = TaskItem(title: "Detached", dueDate: TestClock.date(2026, 11, 17))
+        task.repeatRule = .daily
+
+        task.setCompleted(true, at: TestClock.now, calendar: TestClock.calendar)
+
+        #expect(task.isDone)
+        #expect(task.completedAt == TestClock.now)
+        #expect(task.repeatRule == .daily)
+    }
+
+    @Test func completingNonRepeatingTaskCreatesNoExtraTasks() throws {
+        let context = try makeInMemoryContext()
+        let task = TaskItem(title: "One-off", dueDate: TestClock.date(2026, 11, 17))
+        context.insert(task)
+
+        task.setCompleted(true, at: TestClock.now)
+        task.updateStatus(.inProgress, at: TestClock.now)
+        task.updateStatus(.done, at: TestClock.now)
+
+        #expect(try topLevelTasks(in: context).count == 1)
+        #expect(try context.fetch(FetchDescriptor<TaskItem>()).count == 1)
+        #expect(task.completedAt == TestClock.now)
+    }
 }
