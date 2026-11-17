@@ -31,6 +31,7 @@ struct TaskDetailView: View {
     @Query(sort: \Tag.name) private var tags: [Tag]
 
     @State private var newSubtaskTitle = ""
+    @State private var isConfirmingDelete = false
 
     private static let durations: [TimeInterval] = [15, 30, 45, 60, 90, 120, 180, 240].map { $0 * 60 }
 
@@ -71,10 +72,17 @@ struct TaskDetailView: View {
             }
 
             Section {
-                Button("Delete Task", systemImage: "trash", role: .destructive, action: deleteTask)
+                Button("Delete Task", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
+                    .foregroundStyle(.red)
             }
         }
         .formStyle(.grouped)
+        .confirmationDialog("Delete \u{201C}\(task.title)\u{201D}?", isPresented: $isConfirmingDelete) {
+            Button("Delete Task", role: .destructive, action: deleteTask)
+        } message: {
+            let subtasks = task.subtasks?.count ?? 0
+            Text(subtasks > 0 ? "Its \(subtasks) subtask\(subtasks == 1 ? "" : "s") will be deleted too. You can't undo this." : "You can't undo this.")
+        }
     }
 
     // MARK: Sections

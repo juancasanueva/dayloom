@@ -60,6 +60,22 @@ struct TaskItemTests {
         #expect(first.parent === parent)
     }
 
+    @Test func deletingEverySubtaskKeepsTheParent() throws {
+        let context = try makeInMemoryContext()
+        let parent = TaskItem(title: "Launch")
+        context.insert(parent)
+        let first = parent.addSubtask(title: "Design")
+        let second = parent.addSubtask(title: "Build")
+        try context.save()
+
+        context.delete(first)
+        context.delete(second)
+        try context.save()
+
+        #expect(try context.fetch(FetchDescriptor<TaskItem>()).map(\.title) == ["Launch"])
+        #expect(parent.orderedSubtasks.isEmpty)
+    }
+
     @Test func scheduledEndUsesDuration() {
         let start = TestClock.date(2026, 11, 17, 9, 0)
         let task = TaskItem(title: "Focus", scheduledStart: start)
