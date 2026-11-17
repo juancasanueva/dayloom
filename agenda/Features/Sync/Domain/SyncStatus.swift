@@ -10,6 +10,8 @@ enum SyncStatus: Equatable {
     case unavailable
     /// Signed in, but the last sync attempt failed.
     case problem
+    /// The store opened without iCloud, so nothing syncs until Agenda is reopened.
+    case localOnly
 
     init(_ account: CKAccountStatus) {
         switch account {
@@ -29,6 +31,7 @@ enum SyncStatus: Equatable {
         case .restricted: "iCloud is restricted"
         case .unavailable: "iCloud is unavailable"
         case .problem: "iCloud sync hit a problem"
+        case .localOnly: "iCloud sync is off on this Mac"
         }
     }
 
@@ -40,6 +43,7 @@ enum SyncStatus: Equatable {
         case .restricted: "This Mac's settings don't allow iCloud for Agenda. Your data stays on this Mac."
         case .unavailable: "Agenda syncs again once iCloud is reachable. Your changes are kept on this Mac."
         case .problem: "Your changes are kept on this Mac, and Agenda keeps retrying."
+        case .localOnly: "iCloud couldn't start when Agenda opened, so changes stay on this Mac. Quit and reopen Agenda to try again."
         }
     }
 
@@ -47,7 +51,7 @@ enum SyncStatus: Equatable {
         switch self {
         case .checking: "icloud"
         case .on: "checkmark.icloud"
-        case .signedOut, .restricted: "icloud.slash"
+        case .signedOut, .restricted, .localOnly: "icloud.slash"
         case .unavailable, .problem: "exclamationmark.icloud"
         }
     }

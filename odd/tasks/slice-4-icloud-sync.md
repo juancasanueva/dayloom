@@ -29,7 +29,7 @@ Run after each successfully finished iCloud import, never mid-import (rewritten,
 - S5.1 Survivor ties: notes and tags get a random merge key at creation; ties on `createdAt` break on it, so every Mac keeps the same copy.
 - S5.2 Daily notes merge only when their stored day is identical, never because they fall on the same local day of the merging Mac (time-zone travel).
 - S5.3 Sync status and the merge trigger run for the app's lifetime, not a window's: closing the main window doesn't freeze Settings or stop merges; extra windows don't add observers.
-- S5.4 When the store had to open without iCloud, Settings says sync is off on this Mac until Agenda is reopened, with the reason, instead of promising an automatic retry.
+- S5.4 When the store had to open without iCloud, Settings says sync is off on this Mac until Agenda is reopened, with the reason, instead of promising an automatic retry. A copy not signed for the iCloud container never tries the iCloud store or the CloudKit account lookup (L11).
 - S5.5 Store-open and merge-save errors log their domain and code publicly and their description privately (paths can contain the user name).
 - S5.6 Tests cover the observation wiring, the app's store under tests being in-memory and non-syncing, and the fallback when the iCloud store can't open.
 
@@ -43,8 +43,8 @@ Run after each successfully finished iCloud import, never mid-import (rewritten,
 | T1 | S2 | inline | done | RED→GREEN 8 tests; commit e36bf62 |
 | T2 | S1 | inline | done | RED→GREEN 4 tests; commits c97968e, 079356e; signed entitlements read back; app log: setup succeeded, 31 objects exported |
 | T3 | S3, S2 wiring | inline | done | RED→GREEN 11 tests; commits c3b46d2, 9b9f485; Settings shows status + last synced in app |
-| T4 | S5.1, S5.2 | inline | pending | |
-| T5 | S5.3–S5.6 | inline | pending | |
+| T4 | S5.1, S5.2 | inline | done | RED→GREEN 4 tests (6 cases); commit 310c453 |
+| T5 | S5.3–S5.6 | inline | done | RED→GREEN 7 tests; 190 total; app: Settings current with main window closed, local-only copy launches and explains itself, signed copy re-syncs |
 
 Route evidence: no Writer trigger; T2 and T3 build on each other and the parent owns the project file. Risk: T1 deletes stored records while merging (item 1), T2 changes entitlements and provisioning (items 2, 5) → independent verifier at the feature's end.
 
@@ -60,3 +60,4 @@ Route evidence: no Writer trigger; T2 and T3 build on each other and the parent 
 - L8: Native review (lenses risk, resilience, reliability; user granted): CRITICAL R4 — merging on app activation could run mid-import and delete a duplicate whose blocks or task links hadn't arrived, then sync that deletion back. Correction: merge only after an import event finishes successfully (`NSPersistentCloudKitContainer.Event` type import); no merge at launch/activation, none on a local-only store.
 - L9: Native review approved after the R4 correction (commit f0e613c; targeted validator approved; acknowledged, lineage review-1795ef78a7ba95c8). Non-blocking follow-ups recorded: daily-note survivor tie when createdAt and title match; daily notes grouped by the merging Mac's local day (time-zone travel could merge two days); status observation tied to the main window (A4); fallback "unavailable" text promises a retry that only happens on relaunch; store-open/merge errors logged with privacy public (may include the user name in paths); missing tests for observeChanges wiring, the test host's in-memory store, and the CloudKit-failure fallback path.
 - L10 (2026-11-17, user): "yes, fix all six" (the six review follow-ups in L9).
+- L11: In-app check of the fallback: a copy built without the entitlement crashed (EXC_BREAKPOINT in `PFCloudKitContainerProvider containerWithIdentifier`) — SwiftData doesn't throw, Core Data traps later. Fix: check the signed entitlement first (`SecTaskCopyValueForEntitlement`) and open locally with a reason; account status uses a static provider in that case.

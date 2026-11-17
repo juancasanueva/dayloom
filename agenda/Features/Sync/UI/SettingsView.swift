@@ -5,6 +5,15 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(SyncStatusModel.self) private var syncStatus
 
+    /// The underlying error, shown for the states it explains.
+    private var reason: String? {
+        switch syncStatus.status {
+        case .problem: syncStatus.problem
+        case .localOnly: syncStatus.storeError
+        default: nil
+        }
+    }
+
     var body: some View {
         Form {
             Section("iCloud") {
@@ -15,8 +24,8 @@ struct SettingsView: View {
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
-                        if let problem = syncStatus.problem, syncStatus.status == .problem {
-                            Text(problem)
+                        if let reason = reason {
+                            Text(reason)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)

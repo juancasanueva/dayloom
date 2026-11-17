@@ -1,4 +1,4 @@
-import OSLog
+import CloudKit
 import SwiftData
 import SwiftUI
 
@@ -12,9 +12,25 @@ struct AgendaApp: App {
     private let modelContainer: ModelContainer
 
     init() {
-        let store = PlannerSchema.openStore(inMemory: PlannerSchema.isRunningTests)
-        modelContainer = store.container
-        _syncStatus = State(initialValue: SyncStatusModel(provider: CloudKitAccountStatusProvider(), storeSyncs: store.syncs))
+        let store = PlannerSchema.openAppStore()
+        let container = store.container
+        modelContainer = container
+        // The CloudKit account lookup traps without the entitlement; a local-only copy reports that instead.
+        let provider: AccountStatusProvider = PlannerSchema.hasICloudEntitlement
+            ? CloudKitAccountStatusProvider()
+            : StaticAccountStatusProvider(status: .available)
+        let syncStatus = SyncStatusModel(
+            provider: provider,
+            storeSyncs: store.syncs,
+            storeError: store.syncError,
+            onImportFinished: { Self.mergeSyncDuplicates(in: container) }
+        )
+        // Followed for the app's lifetime, so closing a window neither freezes Settings nor stops merges.
+        // Unit tests never reach CloudKit.
+        if !PlannerSchema.isRunningTests {
+            syncStatus.startObserving()
+        }
+        _syncStatus = State(initialValue: syncStatus)
     }
 
     var body: some Scene {
@@ -23,8 +39,6 @@ struct AgendaApp: App {
                 .environment(appState)
                 .environment(calendarModel)
                 .task { registerLauncherHotKey() }
-                .task { await observeSync() }
-                .onChange(of: syncStatus.completedImports) { mergeSyncDuplicates() }
         }
         .modelContainer(modelContainer)
         .defaultSize(width: 1180, height: 760)
@@ -38,25 +52,6 @@ struct AgendaApp: App {
         }
     }
 
-    /// Tracks the iCloud account and sync results from launch, so Settings can show them.
-    private func observeSync() async {
-        guard !PlannerSchema.isRunningTests else { return }
-        await syncStatus.observeChanges()
-    }
-
-    /// Sync can't enforce uniqueness, so copies made on two Macs are folded together after each
-    /// finished import, never mid-import, when a copy could be missing its blocks or task links.
-    private func mergeSyncDuplicates() {
-        let context = modelContainer.mainContext
-        DuplicateMerger().mergeDuplicates(in: context)
-        guard context.hasChanges else { return }
-        do {
-            try context.save()
-        } catch {
-            PlannerSchema.logger.error("Could not save merged duplicates: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
     /// ⌃⌥Space brings the app forward with the launcher open, even from another app.
     private func registerLauncherHotKey() {
         guard launcherHotKey == nil else { return }
@@ -64,6 +59,19 @@ struct AgendaApp: App {
         launcherHotKey = GlobalHotKey.launcher {
             NSApp.activate()
             appState.isLauncherPresented = true
+        }
+    }
+
+    /// Sync can't enforce uniqueness, so copies made on two Macs are folded together after each
+    /// finished import, never mid-import, when a copy could be missing its blocks or task links.
+    private static func mergeSyncDuplicates(in container: ModelContainer) {
+        let context = container.mainContext
+        DuplicateMerger().mergeDuplicates(in: context)
+        guard context.hasChanges else { return }
+        do {
+            try context.save()
+        } catch {
+            PlannerSchema.log("Could not save merged duplicates", error)
         }
     }
 }
