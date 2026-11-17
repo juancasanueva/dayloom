@@ -3,11 +3,14 @@ import SwiftData
 
 /// Folds together records that sync can duplicate, since CloudKit-backed stores can't
 /// enforce uniqueness. The oldest record survives, so every Mac picks the same one.
+///
+/// Same-day habit completions are left alone: copies carry nothing that lets every Mac pick
+/// the same survivor, so deleting them could remove a different copy on each Mac and lose the
+/// tick. Every reading counts the day once, and un-ticking removes all copies.
 struct DuplicateMerger {
     struct Report: Equatable {
         var tags = 0
         var dailyNotes = 0
-        var habitCompletions = 0
     }
 
     var calendar: Calendar = .current
@@ -17,8 +20,7 @@ struct DuplicateMerger {
     func mergeDuplicates(in context: ModelContext) -> Report {
         Report(
             tags: mergeTags(in: context),
-            dailyNotes: mergeDailyNotes(in: context),
-            habitCompletions: mergeHabitCompletions(in: context)
+            dailyNotes: mergeDailyNotes(in: context)
         )
     }
 
@@ -78,24 +80,5 @@ struct DuplicateMerger {
 
     private func isBlank(_ block: NoteBlock) -> Bool {
         block.kind == .text && block.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    // MARK: Habit completions
-
-    /// A habit keeps one completion per day.
-    private func mergeHabitCompletions(in context: ModelContext) -> Int {
-        let habits = (try? context.fetch(FetchDescriptor<Habit>())) ?? []
-        var removed = 0
-        for habit in habits {
-            let groups = Dictionary(grouping: habit.completions ?? []) { calendar.startOfDay(for: $0.day) }
-            for group in groups.values where group.count > 1 {
-                for extra in group.sorted(by: { $0.day < $1.day }).dropFirst() {
-                    habit.completions?.removeAll { $0 === extra }
-                    context.delete(extra)
-                    removed += 1
-                }
-            }
-        }
-        return removed
     }
 }

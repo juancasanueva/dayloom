@@ -18,12 +18,12 @@ Everything below is detail derived from those lines. Assumptions are marked as s
 Run at launch and whenever the app becomes active. The survivor is chosen the same way on every Mac (oldest `createdAt`), so two Macs merging at once agree.
 - S2.1 Tags with the same name (ignoring case and surrounding spaces) merge into the oldest: it gains every task of the others, which are deleted.
 - S2.2 Daily notes for the same day merge into the oldest: the others' non-empty blocks are appended in order, the note stays pinned if any copy was pinned, and the others are deleted.
-- S2.3 A habit keeps one completion per day; extra completions for the same day are deleted.
+- S2.3 Same-day habit completions are not deleted (rewritten, L7): copies have no key every Mac agrees on, so deleting could lose the tick. Readings count each day once.
 - S2.4 Un-ticking a habit day removes every completion for that day.
 
 ### S3 — Sync status
 - S3.1 Settings (⌘,) shows the iCloud status: syncing on, not signed in, restricted, or unavailable/checking, with a one-line explanation. It updates when the iCloud account changes.
-- S3.2 It also shows the last successful sync time, and a problem state with the error while the latest sync step failed (L4).
+- S3.2 It also shows the last successful sync time, and a problem state with the error while the latest sync step failed (L4). When the store had to open without iCloud, it shows unavailable (L7).
 
 ### S4 — Carry-over
 - S4.1 Original design and copy; no reference to any other product in code or docs.
@@ -46,3 +46,4 @@ Route evidence: no Writer trigger; T2 and T3 build on each other and the parent 
 - L4: CloudKit first returned CKError 5 (bad container) while the new container activated; ~3 min later setup succeeded in the Development (Sandbox) environment and exported the 31 existing objects. Settings showed "Syncing" during the failure, so S3.2 adds sync-event tracking (SwiftData posts `NSPersistentCloudKitContainer.eventChangedNotification`, verified in app).
 - L5: Found and fixed: the test host opened the real on-disk store (now in-memory under tests, and a local-only fallback when CloudKit can't start), and `makeInMemoryContext()` used a bare configuration defaulting to `.automatic`, which attached CloudKit to test stores once the entitlement existed. Logs show that run never finished CloudKit setup (no import/export); the next run made no CloudKit calls.
 - L6: Not verified: a second Mac receiving the data (no second device here); CloudKit production schema deployment is a release step for later.
+- L7: Independent verifier: S1.1, S1.3, S1.4, S2.1, S2.2, S2.4, S3.1, S3.2, S4.1 PASS; S1.2 unverified (no launch allowed). Blocker B1: same-day completion survivor depended on local array order, so two Macs could delete different copies and lose the tick → S2.3 rewritten to never delete completions. Advisories fixed in the same batch: A3 (Settings said "Syncing" on a local-only fallback store), A5 (merge save errors were swallowed, now logged). Left as advisories: A1 (an edit made on another Mac to a daily-note copy after it was merged away is lost with the copy), A2 (blank non-text blocks are moved), A4 (status observation is tied to the main window's lifetime).

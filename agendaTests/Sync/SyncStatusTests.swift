@@ -87,4 +87,12 @@ struct SyncStatusTests {
 
         #expect(model.status == .signedOut)
     }
+
+    @Test func localOnlyStoreIsNotReportedAsSyncing() async {
+        let model = SyncStatusModel(provider: StaticAccountStatusProvider(status: .available), storeSyncs: false)
+
+        await model.refresh()
+
+        #expect(model.status == .unavailable)
+    }
 }

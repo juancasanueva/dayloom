@@ -122,24 +122,25 @@ struct DuplicateMergerTests {
 
     // MARK: Habit completions (S2.3, S2.4)
 
-    @Test func extraCompletionsForSameDayAreRemoved() throws {
+    /// Copies carry nothing that lets every Mac pick the same survivor, so deleting them could
+    /// remove a different copy on each Mac and lose the tick. They stay, and count once.
+    @Test func sameDayCompletionsAreLeftAloneAndCountOnce() throws {
         let context = try makeInMemoryContext()
         let habit = Habit(name: "Run", createdAt: TestClock.date(2026, 11, 1))
         context.insert(habit)
-        for date in [TestClock.date(2026, 11, 16), TestClock.date(2026, 11, 16, 15), TestClock.date(2026, 11, 17)] {
+        for date in [TestClock.date(2026, 11, 16), TestClock.date(2026, 11, 16), TestClock.date(2026, 11, 17)] {
             let completion = HabitCompletion(day: date)
             context.insert(completion)
             completion.habit = habit
         }
         try context.save()
 
-        let report = merger.mergeDuplicates(in: context)
-        try context.save()
+        merger.mergeDuplicates(in: context)
 
-        #expect(habit.completions?.count == 2)
-        #expect(try context.fetch(FetchDescriptor<HabitCompletion>()).count == 2)
+        #expect(!context.hasChanges)
+        #expect(try context.fetch(FetchDescriptor<HabitCompletion>()).count == 3)
         #expect(habit.isCompleted(on: TestClock.date(2026, 11, 16), calendar: TestClock.calendar))
-        #expect(report.habitCompletions == 1)
+        #expect(habit.currentStreak(asOf: TestClock.now, calendar: TestClock.calendar) == 2)
     }
 
     @Test func untickingRemovesEveryCompletionOfTheDay() throws {

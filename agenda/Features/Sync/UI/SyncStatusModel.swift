@@ -9,14 +9,19 @@ final class SyncStatusModel {
     private(set) var problem: String?
     private var account: SyncStatus = .checking
     private let provider: AccountStatusProvider
+    /// False when the store had to open without iCloud, so nothing syncs whatever the account says.
+    private let storeSyncs: Bool
 
-    init(provider: AccountStatusProvider) {
+    init(provider: AccountStatusProvider, storeSyncs: Bool = true) {
         self.provider = provider
+        self.storeSyncs = storeSyncs
     }
 
-    /// The account state wins; a sync problem only shows while the account itself is fine.
+    /// The account state wins; while it's fine, a local-only store or a failed sync step shows instead.
     var status: SyncStatus {
-        account == .on && problem != nil ? .problem : account
+        guard account == .on else { return account }
+        if !storeSyncs { return .unavailable }
+        return problem != nil ? .problem : .on
     }
 
     func refresh() async {

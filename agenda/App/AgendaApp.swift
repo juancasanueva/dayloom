@@ -1,3 +1,4 @@
+import OSLog
 import SwiftData
 import SwiftUI
 
@@ -7,9 +8,15 @@ struct AgendaApp: App {
     @State private var calendarModel = WeekCalendarModel(source: EventKitCalendarSource())
     /// Kept alive for the app's lifetime; releasing it unregisters the shortcut.
     @State private var launcherHotKey: GlobalHotKey?
-    @State private var syncStatus = SyncStatusModel(provider: CloudKitAccountStatusProvider())
+    @State private var syncStatus: SyncStatusModel
     @Environment(\.scenePhase) private var scenePhase
-    private let modelContainer = PlannerSchema.makeContainer(inMemory: PlannerSchema.isRunningTests)
+    private let modelContainer: ModelContainer
+
+    init() {
+        let store = PlannerSchema.openStore(inMemory: PlannerSchema.isRunningTests)
+        modelContainer = store.container
+        _syncStatus = State(initialValue: SyncStatusModel(provider: CloudKitAccountStatusProvider(), storeSyncs: store.syncs))
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -45,8 +52,11 @@ struct AgendaApp: App {
     private func mergeSyncDuplicates() {
         let context = modelContainer.mainContext
         DuplicateMerger().mergeDuplicates(in: context)
-        if context.hasChanges {
-            try? context.save()
+        guard context.hasChanges else { return }
+        do {
+            try context.save()
+        } catch {
+            PlannerSchema.logger.error("Could not save merged duplicates: \(error.localizedDescription, privacy: .public)")
         }
     }
 
