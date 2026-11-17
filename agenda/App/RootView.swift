@@ -26,7 +26,9 @@ struct RootView: View {
         .toolbarBackground(Theme.canvas, for: .windowToolbar)
         .inspector(isPresented: $appState.isInspectorPresented) {
             TaskInspector()
-                .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
+                // Never narrower than its default: editing the notes briefly asks for a few more points,
+                // and a narrower panel grew to give them, then shrank back on save.
+                .inspectorColumnWidth(min: 340, ideal: 340, max: 460)
         }
         .toolbar {
             // Screens show their own large titles, so the toolbar's center holds the launcher instead.

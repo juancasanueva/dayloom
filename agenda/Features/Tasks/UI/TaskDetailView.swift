@@ -184,10 +184,12 @@ struct TaskDetailView: View {
 
     private var notesSection: some View {
         PanelSection("Notes") {
+            // A fixed height keeps the box from growing with each line; long notes scroll inside, without a bar.
             TextEditor(text: $task.notes)
                 .font(.body)
-                .frame(minHeight: 120)
+                .frame(height: 140)
                 .scrollContentBackground(.hidden)
+                .scrollIndicators(.never)
                 .accessibilityLabel("Notes")
         }
     }
