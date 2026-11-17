@@ -17,8 +17,7 @@ struct TodayHabitsStrip: View {
                         TodayHabitChip(habit: habit, today: today)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 2)
             }
             .scrollIndicators(.hidden)
         }

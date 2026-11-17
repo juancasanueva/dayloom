@@ -44,6 +44,20 @@ enum DayFormatting {
         if calendar.isDateInYesterday(date) { return "Yesterday" }
         return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
+
+    /// "Today", "Tomorrow", or the full weekday name, for the day column of a list.
+    static func dayName(for date: Date, now: Date = .now, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        if calendar.isDate(date, inSameDayAs: now) { return "Today" }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
+            return "Tomorrow"
+        }
+        return date.formatted(Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).weekday(.wide))
+    }
+
+    /// Day and short month, such as "19 Nov", shown under the day name.
+    static func shortDate(for date: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        date.formatted(Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).day().month(.abbreviated))
+    }
 }
 
 /// Small rounded label used for tags.

@@ -1,18 +1,26 @@
 import SwiftUI
 
+/// A task as a soft card: check, title, then its time, progress and tags.
 struct TaskRowView: View {
     let task: TaskItem
-    let isOverdue: Bool
+    let emphasis: TimeEmphasis
+    let isSelected: Bool
+    /// False inside a day column, where the day is already shown beside the card.
+    var showsDay = true
+
+    @State private var isHovered = false
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
+        HStack(alignment: .top, spacing: 10) {
             CompletionButton(task: task)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(task.title.isEmpty ? "Untitled" : task.title)
+                    .fontWeight(.medium)
                     .strikethrough(task.isDone)
                     .foregroundStyle(task.isDone ? .secondary : .primary)
                     .lineLimit(2)
+                    .padding(.top, 2)
 
                 if hasMetadata {
                     metadata
@@ -25,25 +33,46 @@ struct TaskRowView: View {
                 Image(systemName: "flag.fill")
                     .font(.caption)
                     .foregroundStyle(task.priority.color)
+                    .padding(.top, 4)
                     .accessibilityLabel("\(task.priority.title) priority")
             }
         }
-        .padding(.vertical, 3)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .plannerCard(isSelected: isSelected, isHovered: isHovered)
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
+        .onHover { isHovered = $0 }
+        .animation(.easeOut(duration: 0.12), value: isHovered)
+    }
+
+    private var dueText: String? {
+        guard let due = task.dueDate, showsDay || task.scheduledStart == nil && emphasis == .overdue else { return nil }
+        return DayFormatting.relativeTitle(for: due)
     }
 
     private var hasMetadata: Bool {
-        task.dueDate != nil || task.scheduledStart != nil || task.repeatRule.repeats || !(task.subtasks ?? []).isEmpty || !(task.tags ?? []).isEmpty
+        dueText != nil || task.scheduledStart != nil || task.repeatRule.repeats || !(task.subtasks ?? []).isEmpty || !(task.tags ?? []).isEmpty
+    }
+
+    private var timeColor: Color {
+        switch emphasis {
+        case .overdue: .red
+        case .today: .accentColor
+        case .normal: .secondary
+        }
     }
 
     private var metadata: some View {
         HStack(spacing: 10) {
-            if let due = task.dueDate {
-                Label(DayFormatting.relativeTitle(for: due), systemImage: "calendar")
-                    .foregroundStyle(isOverdue ? Color.red : Color.secondary)
+            if let dueText {
+                Label(dueText, systemImage: "calendar")
+                    .foregroundStyle(timeColor)
             }
             if let start = task.scheduledStart {
                 Label(start.formatted(date: .omitted, time: .shortened), systemImage: "clock")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(timeColor)
+                    .fontWeight(emphasis == .normal ? .regular : .semibold)
             }
             if task.repeatRule.repeats {
                 Image(systemName: "repeat")
@@ -61,5 +90,6 @@ struct TaskRowView: View {
         }
         .font(.caption)
         .labelStyle(.titleAndIcon)
+        .lineLimit(1)
     }
 }
