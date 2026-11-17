@@ -31,7 +31,9 @@ enum LauncherResults {
                 rows.append(.newEvent(input))
             }
         }
-        rows += matchingTasks(tasks, query: query).map(LauncherRow.existing)
+        // Search on the title left after parsing, so "dentist fri" still finds "Dentist".
+        let searchText = input.hasTitle ? input.title : query
+        rows += matchingTasks(tasks, query: searchText).map(LauncherRow.existing)
         return rows
     }
 

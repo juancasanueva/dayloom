@@ -74,8 +74,10 @@ struct HabitEditorSheet: View {
                 .padding([.horizontal, .top], 20)
 
             Form {
-                Section {
+                Section("Name") {
                     TextField("Name", text: $name, prompt: Text("Drink water"))
+                        .labelsHidden()
+                        .multilineTextAlignment(.leading)
                 }
                 Section("Icon") { symbolGrid }
                 Section("Color") { colorRow }

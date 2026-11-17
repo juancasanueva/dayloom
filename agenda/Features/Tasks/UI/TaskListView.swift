@@ -37,6 +37,10 @@ struct TaskListView: View {
                 quickAddBar
             }
 
+            if scope == .today {
+                TodayHabitsStrip()
+            }
+
             if showsBoard {
                 board(query: query)
             } else {

@@ -78,4 +78,10 @@ struct LauncherResultsTests {
 
         #expect(kinds(rows("water", tasks: tasks)) == ["task", "Water plants"])
     }
+
+    @Test func searchIgnoresParsedDateTokens() {
+        let tasks = [TaskItem(title: "Dentist"), TaskItem(title: "Friday review")]
+
+        #expect(kinds(rows("dentist fri", tasks: tasks)) == ["task", "event", "Dentist"])
+    }
 }

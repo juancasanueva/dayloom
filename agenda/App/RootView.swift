@@ -13,6 +13,8 @@ struct RootView: View {
             switch appState.selection {
             case .calendar:
                 WeekView()
+            case .habits:
+                HabitsView()
             case .tasks(let scope):
                 TaskListView(scope: scope)
             case nil:
@@ -22,6 +24,11 @@ struct RootView: View {
         .inspector(isPresented: $appState.isInspectorPresented) {
             TaskInspector()
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
+        }
+        .overlay {
+            if appState.isLauncherPresented {
+                QuickLauncherView(isPresented: $appState.isLauncherPresented)
+            }
         }
     }
 }

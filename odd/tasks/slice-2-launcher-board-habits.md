@@ -57,10 +57,10 @@ Everything below is detail derived from that line. Assumptions are marked as suc
 
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
-| T1 | S1 | delegated (writer A, worktree) | pending | — |
-| T2 | S2 | delegated (writer B, worktree) | pending | — |
-| T3 | S3.1–S3.4 | delegated (writer C, worktree) | pending | — |
-| T4 | S1.1, S3.4, S3.5 wiring | inline (parent) | pending | — |
+| T1 | S1 | delegated (writer A, worktree) | done | RED→GREEN, 69 tests in worktree; merged 5065aca; app run: ⌘K parse+create, search |
+| T2 | S2 | delegated (writer B, worktree) | done | RED→GREEN, 44 tests in worktree; merged 9049e20; app run: toggle + real drag To Do→In Progress |
+| T3 | S3.1–S3.4 | delegated (writer C, worktree) | done | RED→GREEN, 65 tests in worktree; merged 3375850; app run: create habit, toggle, streak 1 |
+| T4 | S1.1, S3.4, S3.5 wiring | inline (parent) | done | 117 tests; app run: ⌃⌥Space from Finder opens launcher; Today habits strip toggles |
 
 Route evidence: Writer trigger (a). T1–T3 are independent units with disjoint edit surfaces, each a few hundred lines, launched together. They use isolated worktrees because each `xcodebuild` compiles the whole target and would break on another writer's half-written files. Shared files (`AppState`, `RootView`, `SidebarView`, `AgendaApp`) are owned by the parent and wired in T4.
 
@@ -69,3 +69,7 @@ Route evidence: Writer trigger (a). T1–T3 are independent units with disjoint 
 - L1 (2026-11-17, user): "go with slice 1" → slice 1 delivered on `feat/slice-1-tasks-calendar`.
 - L2 (2026-11-17, user): "go with slice 2".
 - L3: Slice 1 verifier: entitlement change PASS. Finding: commit `9af9968` doesn't compile alone (WeekView needs AppState from `50f2ec9`). Reported to the user, history not rewritten.
+- L4: Merged T1–T3 without conflicts. Parent changes: launcher search now uses the parsed title ("dentist fri" finds "Dentist"; RED→GREEN test); Habits menu shortcut is ⌘6 so existing ⌘1–⌘5 keep their meaning; habit sheet name field left-aligned.
+- L5: Schema migration checked by launching on the slice-1 store: existing tasks loaded intact.
+- L6: Risk review: writer C named items 1 and 3, writer A named item 3. Parent assessment: no shipped data, dev store only (item 1 exclusion); updateStatus spawn is the requested S3.1 behavior with defaulted parameter (not item 3); CalendarEventSource is an internal protocol with both conformers updated (not item 3).
+- L7: Not verified in the app: New Event creation (needs calendar permission), repeating-task spawn by clicking (covered by domain tests), sheet icon/color clicks (synthetic clicks did not reach the sheet; keyboard submit worked).
