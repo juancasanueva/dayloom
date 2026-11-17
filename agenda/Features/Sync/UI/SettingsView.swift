@@ -28,6 +28,8 @@ struct SettingsView: View {
 
             ThemeSettingsSection()
 
+            ReminderSettingsSection()
+
             PanelSection("iCloud") {
                 HStack(alignment: .top, spacing: 12) {
                     statusIcon

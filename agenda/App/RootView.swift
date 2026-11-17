@@ -44,6 +44,13 @@ struct RootView: View {
                 .help(appState.isInspectorPresented ? "Hide Inspector (⌥⌘I)" : "Show Inspector (⌥⌘I)")
             }
         }
+        .background { ReminderSync() }
+        .task {
+            // A clicked reminder opens its task.
+            NotificationScheduler.shared.onOpenTask = { key in
+                if let id = TaskReminderKey.identifier(from: key) { appState.select(task: id) }
+            }
+        }
         .overlay {
             if appState.isLauncherPresented {
                 QuickLauncherView(isPresented: $appState.isLauncherPresented)

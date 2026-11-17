@@ -30,6 +30,10 @@ struct AgendaApp: App {
         if !PlannerSchema.isRunningTests {
             syncStatus.startObserving()
         }
+        // Unit tests load XCTest; reminders stay out of them. The UI sandbox (an in-memory store) still gets them.
+        if NSClassFromString("XCTestCase") == nil {
+            NotificationScheduler.shared.start()
+        }
         _syncStatus = State(initialValue: syncStatus)
     }
 
