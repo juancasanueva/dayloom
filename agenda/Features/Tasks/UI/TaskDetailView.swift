@@ -18,6 +18,8 @@ struct TaskInspector: View {
         }
         // A sibling of the content panel: the same rounded paper surface on the canvas.
         .plannerPanel()
+        // No line between the content and this panel, only the canvas gap.
+        .background(HiddenSplitDivider())
     }
 
     /// Fetches by ID instead of relying on the context's registry, which misses freshly saved tasks.
