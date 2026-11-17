@@ -1,0 +1,79 @@
+import SwiftUI
+
+extension TaskPriority {
+    var color: Color {
+        switch self {
+        case .none: .secondary
+        case .low: .blue
+        case .medium: .orange
+        case .high: .red
+        }
+    }
+}
+
+extension TagColor {
+    var color: Color {
+        switch self {
+        case .blue: .blue
+        case .green: .green
+        case .orange: .orange
+        case .pink: .pink
+        case .purple: .purple
+        case .red: .red
+        case .teal: .teal
+        case .yellow: .yellow
+        case .gray: .gray
+        }
+    }
+}
+
+extension EntryTint {
+    var color: Color {
+        switch self {
+        case .accent: .accentColor
+        case let .rgb(red, green, blue): Color(red: red, green: green, blue: blue)
+        }
+    }
+}
+
+enum DayFormatting {
+    /// "Today", "Tomorrow", "Yesterday", or a short date such as "Thu, Nov 20".
+    static func relativeTitle(for date: Date, calendar: Calendar = .current) -> String {
+        if calendar.isDateInToday(date) { return "Today" }
+        if calendar.isDateInTomorrow(date) { return "Tomorrow" }
+        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+    }
+}
+
+/// Small rounded label used for tags.
+struct TagChip: View {
+    let tag: Tag
+
+    var body: some View {
+        Text(tag.name)
+            .font(.caption2.weight(.medium))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .foregroundStyle(tag.color.color)
+            .background(tag.color.color.opacity(0.15), in: Capsule())
+    }
+}
+
+/// Circular check button that toggles a task's completion.
+struct CompletionButton: View {
+    let task: TaskItem
+
+    var body: some View {
+        Button {
+            withAnimation(.snappy) { task.setCompleted(!task.isDone) }
+        } label: {
+            Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(task.isDone ? Color.secondary : task.priority.color)
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(task.isDone ? "Mark as not done" : "Mark as done")
+    }
+}

@@ -25,9 +25,9 @@ Smart list rules (assumptions derived from S1):
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
 | T1 | S2, S5 | inline | done | RED: missing PlannerSchema; GREEN: 17 tests pass |
-| T2 | S1, S2 | inline | pending | — |
-| T3 | S3 | inline | pending | — |
-| T4 | S1–S4 | inline | pending | — |
+| T2 | S1, S2 | inline | done | build green; app run: quick add, ⌘N focus, Today badge verified on screen |
+| T3 | S3 | inline | done | RED: missing WeekCalendar/CalendarEntry; GREEN: 31 tests; app run: week grid, double-click creates scheduled task |
+| T4 | S1–S4 | inline | done | app run: inspector opens from calendar block; 0 reference-name mentions |
 
 - T1 — Domain: `TaskItem`, `Tag`, status/priority, completion rules, smart-list query (tests first).
 - T2 — Tasks UI: sidebar, task list with quick add, inspector detail with subtasks/tags.
@@ -41,3 +41,5 @@ Route evidence: no Writer trigger (units share `TaskItem` and the root view; not
 - L1 (2026-11-17, user): "I want to create a MAcOS app that is an exact copy of this app [reference app URL redacted] but do not mention [reference app] in any docs or code." → agreed scope: similar feature set, original design (S4).
 - L2 (2026-11-17, user): "go with slice 1" (Slice 1: Tasks + Calendar core).
 - L3: Baseline `dccc66a` on `master`; unit test baseline green.
+- L4: T1–T4 implemented. Bugs found by running the app and fixed: inspector missed freshly saved tasks (registeredModel → fetch by ID); weekday headers wrapped; zero-padded hour labels; toolbar drifted over inspector.
+- L5: Not verified: real EventKit events (needs the user to grant calendar access interactively); tag and subtask UI flows driven only through domain tests.
