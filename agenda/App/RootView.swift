@@ -27,6 +27,16 @@ struct RootView: View {
             TaskInspector()
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    appState.isInspectorPresented.toggle()
+                } label: {
+                    Label(appState.isInspectorPresented ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.right")
+                }
+                .help(appState.isInspectorPresented ? "Hide Inspector (⌥⌘I)" : "Show Inspector (⌥⌘I)")
+            }
+        }
         .overlay {
             if appState.isLauncherPresented {
                 QuickLauncherView(isPresented: $appState.isLauncherPresented)
