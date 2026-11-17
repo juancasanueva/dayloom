@@ -29,8 +29,10 @@ struct RootView: View {
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
         }
         .toolbar {
-            // Screens show their own large titles, so the toolbar has no title to push this to the trailing edge.
-            ToolbarItem(placement: .principal) { Spacer() }
+            // Screens show their own large titles, so the toolbar's center holds the launcher instead.
+            ToolbarItem(placement: .principal) {
+                LauncherPill { appState.isLauncherPresented = true }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     appState.isInspectorPresented.toggle()
