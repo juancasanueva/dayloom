@@ -103,6 +103,16 @@ struct SyncStatusTests {
         #expect(!SyncStatus.localOnly.detail.contains("once iCloud is reachable"))
     }
 
+    /// The retry promise of `.unavailable` doesn't hold for a local-only store, whatever the account says.
+    @Test(arguments: [CKAccountStatus.temporarilyUnavailable, .couldNotDetermine, .noAccount])
+    func localOnlyStoreWinsOverInconclusiveAccounts(account: CKAccountStatus) async {
+        let model = SyncStatusModel(provider: StaticAccountStatusProvider(status: account), storeSyncs: false)
+
+        await model.refresh()
+
+        #expect(model.status == .localOnly)
+    }
+
     // MARK: Merge trigger and observation (S5.3, S5.6)
 
     @Test func onlySuccessfulFinishedImportsTriggerAMerge() async {
@@ -116,6 +126,23 @@ struct SyncStatusTests {
         #expect(merges == 0)
 
         model.record(SyncEvent(endDate: TestClock.now, errorDescription: nil, kind: .import))
+        #expect(merges == 1)
+    }
+
+    @Test func startingObservationTwiceKeepsOneObserver() async {
+        let provider = ScriptedAccountStatusProvider(
+            statuses: [.noAccount, .available],
+            events: [SyncEvent(endDate: TestClock.now, errorDescription: nil, kind: .import)]
+        )
+        var merges = 0
+        let model = SyncStatusModel(provider: provider) { merges += 1 }
+
+        let first = model.startObserving()
+        let second = model.startObserving()
+        await first.value
+
+        #expect(first == second)
+        #expect(provider.statusReads == 2)
         #expect(merges == 1)
     }
 

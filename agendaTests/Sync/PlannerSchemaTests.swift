@@ -39,7 +39,7 @@ struct PlannerSchemaTests {
     @Test func storeOpensLocallyWhenICloudCannotStart() {
         var requested: [String?] = []
 
-        let store = PlannerSchema.openStore(inMemory: false) { configuration in
+        let store = PlannerSchema.openStore(inMemory: false, canUseICloud: true) { configuration in
             requested.append(configuration.cloudKitContainerIdentifier)
             if configuration.cloudKitContainerIdentifier != nil {
                 throw CocoaError(.featureUnsupported)
@@ -55,7 +55,7 @@ struct PlannerSchemaTests {
     @Test func storeSyncsWhenICloudStarts() {
         var requested: [String?] = []
 
-        let store = PlannerSchema.openStore(inMemory: false) { configuration in
+        let store = PlannerSchema.openStore(inMemory: false, canUseICloud: true) { configuration in
             requested.append(configuration.cloudKitContainerIdentifier)
             return try ModelContainer(for: PlannerSchema.schema, configurations: [PlannerSchema.configuration(inMemory: true)])
         }

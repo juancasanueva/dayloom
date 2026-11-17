@@ -32,7 +32,9 @@ struct DuplicateMerger {
         }
         var removed = 0
         for group in groups.values where group.count > 1 {
-            let ordered = group.sorted { ($0.createdAt, $0.mergeKey, $0.name) < ($1.createdAt, $1.mergeKey, $1.name) }
+            let ordered = group.sorted {
+                ($0.createdAt, $0.mergeKey, $0.name, $0.colorRaw) < ($1.createdAt, $1.mergeKey, $1.name, $1.colorRaw)
+            }
             let survivor = ordered[0]
             for duplicate in ordered.dropFirst() {
                 for task in duplicate.tasks ?? [] {

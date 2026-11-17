@@ -155,6 +155,26 @@ struct DuplicateMergerTests {
         #expect(remaining.map(\.mergeKey) == ["a-key"])
     }
 
+    /// Tags made before merge keys existed have an empty key; their color still decides a tie.
+    @Test(arguments: [false, true])
+    func legacyTagTieFallsBackToColor(reversed: Bool) throws {
+        let context = try makeInMemoryContext()
+        var tags = [TagColor.red, .green].map { color -> agenda.Tag in
+            let tag = agenda.Tag(name: "Work", color: color)
+            tag.createdAt = TestClock.date(2026, 1, 1)
+            tag.mergeKey = ""
+            return tag
+        }
+        if reversed { tags.reverse() }
+        tags.forEach(context.insert)
+        try context.save()
+
+        merger.mergeDuplicates(in: context)
+        try context.save()
+
+        #expect(try context.fetch(FetchDescriptor<agenda.Tag>()).map(\.colorRaw) == [TagColor.green.rawValue])
+    }
+
     @Test(arguments: [false, true])
     func dailyNoteTieKeepsLowestMergeKeyWhateverTheOrder(reversed: Bool) throws {
         let context = try makeInMemoryContext()

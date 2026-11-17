@@ -31,10 +31,11 @@ final class SyncStatusModel {
         self.onImportFinished = onImportFinished
     }
 
-    /// The account state wins; while it's fine, a local-only store or a failed sync step shows instead.
+    /// A local-only store wins, since nothing else changes before Agenda is reopened. Otherwise the
+    /// account state wins, and while it's fine a failed sync step shows instead.
     var status: SyncStatus {
-        guard account == .on else { return account }
         if !storeSyncs { return .localOnly }
+        guard account == .on else { return account }
         return problem != nil ? .problem : .on
     }
 
@@ -55,10 +56,14 @@ final class SyncStatusModel {
         }
     }
 
-    /// Starts following the account and sync activity for the app's lifetime. Calling it again does nothing.
-    func startObserving() {
-        guard observation == nil else { return }
-        observation = Task { await observeChanges() }
+    /// Starts following the account and sync activity for the app's lifetime. Calling it again
+    /// returns the running observation instead of starting another.
+    @discardableResult
+    func startObserving() -> Task<Void, Never> {
+        if let observation { return observation }
+        let task = Task { await observeChanges() }
+        observation = task
+        return task
     }
 
     /// Follows account changes and sync activity until both streams end.
