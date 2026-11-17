@@ -7,6 +7,8 @@ struct AgendaApp: App {
     @State private var calendarModel = WeekCalendarModel(source: EventKitCalendarSource())
     /// Kept alive for the app's lifetime; releasing it unregisters the shortcut.
     @State private var launcherHotKey: GlobalHotKey?
+    @State private var syncStatus = SyncStatusModel(provider: CloudKitAccountStatusProvider())
+    @Environment(\.scenePhase) private var scenePhase
     private let modelContainer = PlannerSchema.makeContainer(inMemory: PlannerSchema.isRunningTests)
 
     var body: some Scene {
@@ -20,6 +22,24 @@ struct AgendaApp: App {
         .defaultSize(width: 1180, height: 760)
         .commands {
             PlannerCommands(appState: appState)
+        }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active { mergeSyncDuplicates() }
+        }
+
+        Settings {
+            SettingsView()
+                .environment(syncStatus)
+        }
+    }
+
+    /// Sync can't enforce uniqueness, so copies made on two Macs are folded together
+    /// at launch and whenever the app comes forward.
+    private func mergeSyncDuplicates() {
+        let context = modelContainer.mainContext
+        DuplicateMerger().mergeDuplicates(in: context)
+        if context.hasChanges {
+            try? context.save()
         }
     }
 
