@@ -15,11 +15,24 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        Form {
-            Section("iCloud") {
-                Label {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Settings")
+                    .font(Theme.sectionTitle)
+                Text("How Dayloom keeps your planner in sync.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+
+            PanelSection("iCloud") {
+                HStack(alignment: .top, spacing: 12) {
+                    statusIcon
+
                     VStack(alignment: .leading, spacing: 3) {
                         Text(syncStatus.status.title)
+                            .fontWeight(.medium)
                         Text(syncStatus.status.detail)
                             .font(.callout)
                             .foregroundStyle(.secondary)
@@ -29,6 +42,7 @@ struct SettingsView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         if let lastSynced = syncStatus.lastSynced {
                             Text("Last synced \(lastSynced.formatted(date: .abbreviated, time: .shortened))")
@@ -36,15 +50,26 @@ struct SettingsView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                } icon: {
-                    Image(systemName: syncStatus.status.symbol)
-                        .foregroundStyle(syncStatus.status == .on ? Color.accentColor : Color.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .accessibilityElement(children: .combine)
             }
         }
-        .formStyle(.grouped)
-        .frame(width: 440)
+        .padding(24)
+        .frame(width: 440, alignment: .topLeading)
         .fixedSize(horizontal: false, vertical: true)
+        .containerBackground(Theme.panel, for: .window)
+    }
+
+    /// The sync symbol on a soft round wash, tinted while sync is on.
+    private var statusIcon: some View {
+        let tint = syncStatus.status == .on ? Color.accentColor : Color.secondary
+        return Image(systemName: syncStatus.status.symbol)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(tint)
+            .frame(width: 32, height: 32)
+            .background(tint.opacity(0.14), in: Circle())
+            .accessibilityHidden(true)
     }
 }
 

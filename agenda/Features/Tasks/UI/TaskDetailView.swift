@@ -7,12 +7,17 @@ struct TaskInspector: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if let id = appState.selectedTaskID, let task = fetchTask(id) {
-            TaskDetailView(task: task)
-                .id(id)
-        } else {
-            ContentUnavailableView("No Task Selected", systemImage: "checklist", description: Text("Select a task to see its details."))
+        Group {
+            if let id = appState.selectedTaskID, let task = fetchTask(id) {
+                TaskDetailView(task: task)
+                    .id(id)
+            } else {
+                ContentUnavailableView("No Task Selected", systemImage: "checklist", description: Text("Select a task to see its details."))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
+        // A sibling of the content panel: the same rounded paper surface on the canvas.
+        .plannerPanel()
     }
 
     /// Fetches by ID instead of relying on the context's registry, which misses freshly saved tasks.
@@ -36,47 +41,23 @@ struct TaskDetailView: View {
     private static let durations: [TimeInterval] = [15, 30, 45, 60, 90, 120, 180, 240].map { $0 * 60 }
 
     var body: some View {
-        Form {
-            Section {
-                TextField("Title", text: $task.title, prompt: Text("Task title"), axis: .vertical)
-                    .labelsHidden()
-                    .font(.title3.weight(.semibold))
-                    .textFieldStyle(.plain)
-                    .multilineTextAlignment(.leading)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                prioritySection
 
-                Picker("Status", selection: statusBinding) {
-                    ForEach(TaskStatus.allCases) { Text($0.title).tag($0) }
+                if task.parent == nil {
+                    datesSection
                 }
-                .pickerStyle(.segmented)
 
-                Picker("Priority", selection: $task.priority) {
-                    ForEach(TaskPriority.allCases.reversed()) { priority in
-                        Label(priority.title, systemImage: priority == .none ? "flag.slash" : "flag.fill")
-                            .tag(priority)
-                    }
-                }
+                tagsSection
+                subtasksSection
+                notesSection
+                deleteButton
             }
-
-            if task.parent == nil {
-                datesSection
-            }
-
-            tagsSection
-            subtasksSection
-
-            Section("Notes") {
-                TextEditor(text: $task.notes)
-                    .font(.body)
-                    .frame(minHeight: 100)
-                    .scrollContentBackground(.hidden)
-            }
-
-            Section {
-                Button("Delete Task", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
-                    .foregroundStyle(.red)
-            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .formStyle(.grouped)
         .confirmationDialog("Delete \u{201C}\(task.title)\u{201D}?", isPresented: $isConfirmingDelete) {
             Button("Delete Task", role: .destructive, action: deleteTask)
         } message: {
@@ -87,52 +68,94 @@ struct TaskDetailView: View {
 
     // MARK: Sections
 
+    /// The title, prominent like a page title, with the status right under it.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TextField("Title", text: $task.title, prompt: Text("Task title"), axis: .vertical)
+                .labelsHidden()
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .textFieldStyle(.plain)
+                .multilineTextAlignment(.leading)
+
+            Picker("Status", selection: statusBinding) {
+                ForEach(TaskStatus.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
+    }
+
+    private var prioritySection: some View {
+        PanelSection("Priority") {
+            FlowLayout(spacing: 6, lineSpacing: 6) {
+                ForEach(TaskPriority.allCases) { priority in
+                    Toggle(priority.title, isOn: priorityBinding(priority))
+                        .accessibilityLabel("\(priority.title) priority")
+                    .toggleStyle(PillToggleStyle(color: priority == .none ? .secondary : priority.color))
+                }
+            }
+        }
+    }
+
     private var datesSection: some View {
-        Section("Dates") {
-            Toggle("Due date", isOn: hasDueDate)
+        PanelSection("Dates") {
+            DetailRow("Due date") {
+                Toggle("Due date", isOn: hasDueDate)
+            }
             if let due = task.dueDate {
-                DatePicker("Due", selection: Binding(get: { due }, set: { task.dueDate = $0 }), displayedComponents: .date)
+                DetailRow("Due") {
+                    DatePicker("Due", selection: Binding(get: { due }, set: { task.dueDate = $0 }), displayedComponents: .date)
+                }
             }
 
-            Toggle("Scheduled", isOn: hasSchedule)
+            DetailRow("Scheduled") {
+                Toggle("Scheduled", isOn: hasSchedule)
+            }
             if let start = task.scheduledStart {
-                DatePicker(
-                    "Starts",
-                    selection: Binding(get: { start }, set: { task.scheduledStart = $0 }),
-                    displayedComponents: [.date, .hourAndMinute]
-                )
-                Picker("Duration", selection: $task.scheduledDuration) {
-                    ForEach(Self.durations, id: \.self) { duration in
-                        Text(Duration.seconds(duration).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated)))
-                            .tag(duration)
+                DetailRow("Starts") {
+                    DatePicker(
+                        "Starts",
+                        selection: Binding(get: { start }, set: { task.scheduledStart = $0 }),
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                }
+                DetailRow("Duration") {
+                    Picker("Duration", selection: $task.scheduledDuration) {
+                        ForEach(Self.durations, id: \.self) { duration in
+                            Text(Duration.seconds(duration).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated)))
+                                .tag(duration)
+                        }
                     }
                 }
             }
 
-            Picker("Repeat", selection: $task.repeatRule) {
-                ForEach(RepeatRule.allCases) { rule in
-                    Text(rule.title).tag(rule)
+            DetailRow("Repeat") {
+                Picker("Repeat", selection: $task.repeatRule) {
+                    ForEach(RepeatRule.allCases) { rule in
+                        Text(rule.title).tag(rule)
+                    }
                 }
             }
             .disabled(!task.canRepeat)
             .help(task.canRepeat ? "Creates the next occurrence when this task is completed." : "Add a due date or schedule to repeat this task.")
         }
+        .toggleStyle(.switch)
+        .controlSize(.small)
     }
 
-    @ViewBuilder
     private var tagsSection: some View {
-        Section("Tags") {
+        PanelSection("Tags") {
             if tags.isEmpty {
                 Text("Create tags from the sidebar.")
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(tags) { tag in
-                    Toggle(isOn: tagBinding(tag)) {
-                        Label {
-                            Text(tag.name)
-                        } icon: {
-                            Image(systemName: "number").foregroundStyle(tag.color.color)
+                FlowLayout(spacing: 6, lineSpacing: 6) {
+                    ForEach(tags) { tag in
+                        Toggle(isOn: tagBinding(tag)) {
+                            Label(tag.name, systemImage: "number")
                         }
+                        .toggleStyle(PillToggleStyle(color: tag.color.color))
                     }
                 }
             }
@@ -140,29 +163,56 @@ struct TaskDetailView: View {
     }
 
     private var subtasksSection: some View {
-        Section {
+        let progress = task.subtaskProgress
+        return PanelSection(progress.total > 0 ? "Subtasks \(progress.done)/\(progress.total)" : "Subtasks") {
             ForEach(task.orderedSubtasks) { subtask in
                 SubtaskRow(subtask: subtask) { modelContext.delete(subtask) }
             }
-            HStack {
+            HStack(spacing: 8) {
                 Image(systemName: "plus")
+                    .font(.callout)
                     .foregroundStyle(.secondary)
-                // Hidden label: a grouped form would otherwise show the title as a label and put the field out of sight.
+                    .frame(width: 20)
+                // Hidden label: as a labeled field the title would show beside it and squeeze the field out of sight.
                 TextField("Add subtask", text: $newSubtaskTitle, prompt: Text("Add subtask"))
                     .labelsHidden()
                     .textFieldStyle(.plain)
                     .onSubmit(addSubtask)
             }
-        } header: {
-            let progress = task.subtaskProgress
-            Text(progress.total > 0 ? "Subtasks \(progress.done)/\(progress.total)" : "Subtasks")
         }
+    }
+
+    private var notesSection: some View {
+        PanelSection("Notes") {
+            TextEditor(text: $task.notes)
+                .font(.body)
+                .frame(minHeight: 120)
+                .scrollContentBackground(.hidden)
+                .accessibilityLabel("Notes")
+        }
+    }
+
+    private var deleteButton: some View {
+        Button(role: .destructive) {
+            isConfirmingDelete = true
+        } label: {
+            Label("Delete Task", systemImage: "trash")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(DestructiveButtonStyle())
     }
 
     // MARK: Bindings
 
     private var statusBinding: Binding<TaskStatus> {
         Binding(get: { task.status }, set: { task.updateStatus($0) })
+    }
+
+    private func priorityBinding(_ priority: TaskPriority) -> Binding<Bool> {
+        Binding(
+            get: { task.priority == priority },
+            set: { if $0 { task.priority = priority } }
+        )
     }
 
     private var hasDueDate: Binding<Bool> {
@@ -212,6 +262,55 @@ struct TaskDetailView: View {
     }
 }
 
+/// A label on the leading side and its control on the trailing side, inside a details section.
+private struct DetailRow<Control: View>: View {
+    let title: String
+    @ViewBuilder let control: Control
+
+    init(_ title: String, @ViewBuilder control: () -> Control) {
+        self.title = title
+        self.control = control()
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            control
+                .labelsHidden()
+                .fixedSize()
+        }
+        .frame(minHeight: 22)
+    }
+}
+
+/// Red on a faint red wash, stronger under the pointer.
+private struct DestructiveButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        WashedLabel(configuration: configuration)
+    }
+
+    private struct WashedLabel: View {
+        let configuration: ButtonStyleConfiguration
+        @State private var isHovered = false
+
+        var body: some View {
+            configuration.label
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.red)
+                .padding(.vertical, 8)
+                .background(
+                    Color.red.opacity(configuration.isPressed ? 0.2 : (isHovered ? 0.14 : 0.08)),
+                    in: RoundedRectangle(cornerRadius: Theme.cardRadius)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
+                .onHover { isHovered = $0 }
+        }
+    }
+}
+
 private struct SubtaskRow: View {
     @Bindable var subtask: TaskItem
     var onDelete: () -> Void
@@ -221,6 +320,7 @@ private struct SubtaskRow: View {
     var body: some View {
         HStack(spacing: 8) {
             CompletionButton(task: subtask)
+                .frame(width: 20)
             TextField("Subtask", text: $subtask.title, prompt: Text("Subtask"))
                 .labelsHidden()
                 .textFieldStyle(.plain)

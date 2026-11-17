@@ -104,7 +104,76 @@ extension View {
     }
 }
 
+/// A titled group on a panel: a quiet heading over a soft card, used by the details panel and Settings.
+struct PanelSection<Content: View>: View {
+    let title: String?
+    @ViewBuilder let content: Content
+
+    init(_ title: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let title {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 4)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                content
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
+        }
+    }
+}
+
 // MARK: - Controls
+
+/// A toggle drawn as a soft pill: tinted with `color` while on, a quiet outline while off.
+struct PillToggleStyle: ToggleStyle {
+    var color: Color = .accentColor
+
+    func makeBody(configuration: Configuration) -> some View {
+        Pill(configuration: configuration, color: color)
+    }
+
+    private struct Pill: View {
+        let configuration: ToggleStyleConfiguration
+        let color: Color
+        @State private var isHovered = false
+
+        var body: some View {
+            Button {
+                configuration.isOn.toggle()
+            } label: {
+                configuration.label
+                    .font(.caption.weight(.medium))
+                    .labelStyle(.titleAndIcon)
+                    .lineLimit(1)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .foregroundStyle(configuration.isOn ? AnyShapeStyle(color) : AnyShapeStyle(.secondary))
+                    .background(
+                        configuration.isOn ? color.opacity(0.16) : (isHovered ? Theme.cardHover : Color.clear),
+                        in: Capsule()
+                    )
+                    .overlay {
+                        Capsule().strokeBorder(configuration.isOn ? Color.clear : Theme.hairline, lineWidth: 1)
+                    }
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .onHover { isHovered = $0 }
+            .accessibilityAddTraits(configuration.isOn ? .isSelected : [])
+        }
+    }
+}
 
 /// A quiet rounded control for a page header: the card surface, a little stronger under the pointer or when pressed.
 struct PageControlStyle: ButtonStyle {
@@ -133,5 +202,61 @@ struct PageControlStyle: ButtonStyle {
                 .contentShape(RoundedRectangle(cornerRadius: 8))
                 .onHover { isHovered = $0 }
         }
+    }
+}
+
+// MARK: - Layout
+
+/// Lays out pills left to right, wrapping onto a new line when the next one would overflow.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+    var lineSpacing: CGFloat = 6
+
+    struct Arrangement: Equatable {
+        var origins: [CGPoint]
+        var size: CGSize
+    }
+
+    /// Where each item goes, and the space they take together, for a line at most `maxWidth` wide.
+    /// An item wider than the line still gets a line of its own.
+    static func arrange(sizes: [CGSize], maxWidth: CGFloat, spacing: CGFloat, lineSpacing: CGFloat) -> Arrangement {
+        var origins: [CGPoint] = []
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var lineHeight: CGFloat = 0
+        var width: CGFloat = 0
+
+        for size in sizes {
+            if x > 0 && x + size.width > maxWidth {
+                y += lineHeight + lineSpacing
+                x = 0
+                lineHeight = 0
+            }
+            origins.append(CGPoint(x: x, y: y))
+            width = max(width, x + size.width)
+            lineHeight = max(lineHeight, size.height)
+            x += size.width + spacing
+        }
+        return Arrangement(origins: origins, size: CGSize(width: width, height: sizes.isEmpty ? 0 : y + lineHeight))
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrangement(for: subviews, maxWidth: proposal.width ?? .infinity).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let origins = arrangement(for: subviews, maxWidth: bounds.width).origins
+        for (subview, origin) in zip(subviews, origins) {
+            subview.place(at: CGPoint(x: bounds.minX + origin.x, y: bounds.minY + origin.y), proposal: .unspecified)
+        }
+    }
+
+    private func arrangement(for subviews: Subviews, maxWidth: CGFloat) -> Arrangement {
+        Self.arrange(
+            sizes: subviews.map { $0.sizeThatFits(.unspecified) },
+            maxWidth: maxWidth,
+            spacing: spacing,
+            lineSpacing: lineSpacing
+        )
     }
 }
