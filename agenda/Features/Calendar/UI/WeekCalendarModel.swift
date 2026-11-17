@@ -31,6 +31,12 @@ final class WeekCalendarModel {
         reload()
     }
 
+    /// Saves a new event through the source, then reloads the visible week.
+    func createEvent(title: String, start: Date, end: Date, isAllDay: Bool) throws {
+        try source.createEvent(title: title, start: start, end: end, isAllDay: isAllDay)
+        reload()
+    }
+
     func showNextWeek() { move(byWeeks: 1) }
     func showPreviousWeek() { move(byWeeks: -1) }
 
