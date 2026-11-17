@@ -1,25 +1,32 @@
 import Foundation
 import Observation
 
-/// State for the week view: which week is shown and the events loaded for it.
+/// State for the calendar: which week or month is shown and the events loaded for it.
 @Observable
 final class WeekCalendarModel {
     private(set) var anchor: Date
     private(set) var events: [CalendarEntry] = []
     private(set) var access: CalendarAccess
 
+    /// Week or month; changing it reloads the events for the new range.
+    var scope: CalendarScope = .week {
+        didSet { if scope != oldValue { reload() } }
+    }
+
     let week: WeekCalendar
+    let month: MonthCalendar
     private let source: CalendarEventSource
 
     init(source: CalendarEventSource, week: WeekCalendar = WeekCalendar(), anchor: Date = .now) {
         self.source = source
         self.week = week
+        self.month = MonthCalendar(calendar: week.calendar)
         self.anchor = anchor
         self.access = source.access
     }
 
-    var days: [Date] { week.days(containing: anchor) }
-    var interval: DateInterval { week.interval(containing: anchor) }
+    var days: [Date] { scope == .week ? week.days(containing: anchor) : month.days(containing: anchor) }
+    var interval: DateInterval { scope == .week ? week.interval(containing: anchor) : month.interval(containing: anchor) }
 
     func reload() {
         access = source.access
@@ -49,6 +56,17 @@ final class WeekCalendarModel {
     func showNextWeek() { move(byWeeks: 1) }
     func showPreviousWeek() { move(byWeeks: -1) }
 
+    /// The next week or month, depending on the scope.
+    func showNext() { scope == .week ? move(byWeeks: 1) : move(byMonths: 1) }
+    /// The previous week or month, depending on the scope.
+    func showPrevious() { scope == .week ? move(byWeeks: -1) : move(byMonths: -1) }
+
+    /// Switches to the week holding `day`.
+    func showWeek(of day: Date) {
+        anchor = day
+        if scope == .week { reload() } else { scope = .week }
+    }
+
     func showToday(_ now: Date = .now) {
         anchor = now
         reload()
@@ -63,6 +81,11 @@ final class WeekCalendarModel {
 
     private func move(byWeeks weeks: Int) {
         anchor = week.shift(anchor, byWeeks: weeks)
+        reload()
+    }
+
+    private func move(byMonths months: Int) {
+        anchor = month.shift(anchor, byMonths: months)
         reload()
     }
 }

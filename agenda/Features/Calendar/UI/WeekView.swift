@@ -15,6 +15,7 @@ struct WeekView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Query private var tasks: [TaskItem]
+    @AppStorage("calendarScope") private var storedScope: CalendarScope = .week
 
     var body: some View {
         let entries = model.events + CalendarEntry.scheduledTasks(tasks, in: model.interval)
@@ -24,11 +25,22 @@ struct WeekView: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(title(for: days), subtitle: subtitle(for: days, count: entries.count)) {
-                    WeekNavigationControls(
-                        onPrevious: model.showPreviousWeek,
-                        onToday: { model.showToday() },
-                        onNext: model.showNextWeek
-                    )
+                    HStack(spacing: 10) {
+                        Picker("View", selection: $storedScope) {
+                            ForEach(CalendarScope.allCases) { Text($0.title).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .fixedSize()
+                        .help("Show a week or a month")
+
+                        WeekNavigationControls(
+                            scope: model.scope,
+                            onPrevious: model.showPrevious,
+                            onToday: { model.showToday() },
+                            onNext: model.showNext
+                        )
+                    }
                 }
                 CalendarAccessBanner()
             }
@@ -36,6 +48,23 @@ struct WeekView: View {
             .padding(.horizontal, Theme.pagePadding.leading)
             .padding(.bottom, 14)
 
+            if model.scope == .month {
+                MonthGrid(
+                    days: days,
+                    anchor: model.anchor,
+                    entries: entries,
+                    month: model.month,
+                    selectedTaskID: selectedTaskID,
+                    onSelectTask: selectTask,
+                    onOpenDay: { storedScope = .week; model.showWeek(of: $0) },
+                    onCreateTask: { day in
+                        // At 9:00, so the new task has a time and shows up in the calendar.
+                        createTask(at: Calendar.current.startOfDay(for: day).addingTimeInterval(9 * 60 * 60))
+                    }
+                )
+                .padding(.horizontal, Theme.pagePadding.leading)
+                .padding(.bottom, 20)
+            } else {
             VStack(spacing: 0) {
                 WeekDayHeader(days: days)
                 AllDayRow(days: days, entries: entries, week: model.week, selectedTaskID: selectedTaskID, onSelectTask: selectTask)
@@ -67,11 +96,13 @@ struct WeekView: View {
             }
             .padding(.leading, Theme.pagePadding.leading - 16)
             .padding(.trailing, Theme.pagePadding.trailing - 8)
+            }
         }
         .frame(minWidth: 600)
         .plannerPanel()
         .navigationTitle(title(for: days))
         .toolbar(removing: .title)
+        .onChange(of: storedScope, initial: true) { _, scope in model.scope = scope }
         .task {
             model.reload()
             await model.observeChanges()
@@ -79,6 +110,7 @@ struct WeekView: View {
     }
 
     private func title(for days: [Date]) -> String {
+        if model.scope == .month { return model.anchor.formatted(.dateTime.month(.wide).year()) }
         guard let first = days.first, let last = days.last else { return "Calendar" }
         let calendar = Calendar.current
         if calendar.isDate(first, equalTo: last, toGranularity: .month) {
@@ -89,6 +121,7 @@ struct WeekView: View {
 
     /// The visible days, such as "Nov 16 – 22", and how much is on them.
     private func subtitle(for days: [Date], count: Int) -> String {
+        if model.scope == .month { return count == 0 ? "Nothing scheduled" : "\(count) scheduled" }
         guard let first = days.first, let last = days.last else { return "" }
         let range = (first..<last).formatted(.interval.month(.abbreviated).day())
         return count == 0 ? "\(range) · Nothing scheduled" : "\(range) · \(count) scheduled"
@@ -108,8 +141,9 @@ struct WeekView: View {
 
 // MARK: - Week navigation
 
-/// Previous week, back to today, and next week, shown in the page header.
+/// Previous, back to today, and next — by week or by month — shown in the page header.
 private struct WeekNavigationControls: View {
+    var scope: CalendarScope
     var onPrevious: () -> Void
     var onToday: () -> Void
     var onNext: () -> Void
@@ -118,16 +152,16 @@ private struct WeekNavigationControls: View {
         HStack(spacing: 6) {
             Button("Today", action: onToday)
                 .keyboardShortcut("t", modifiers: .command)
-                .help("Go to This Week (⌘T)")
+                .help(scope == .week ? "Go to This Week (⌘T)" : "Go to This Month (⌘T)")
                 .buttonStyle(PageControlStyle(horizontalPadding: 12))
 
             HStack(spacing: 2) {
-                Button("Previous Week", systemImage: "chevron.left", action: onPrevious)
+                Button(scope == .week ? "Previous Week" : "Previous Month", systemImage: "chevron.left", action: onPrevious)
                     .keyboardShortcut(.leftArrow, modifiers: .command)
-                    .help("Previous Week (⌘←)")
-                Button("Next Week", systemImage: "chevron.right", action: onNext)
+                    .help(scope == .week ? "Previous Week (⌘←)" : "Previous Month (⌘←)")
+                Button(scope == .week ? "Next Week" : "Next Month", systemImage: "chevron.right", action: onNext)
                     .keyboardShortcut(.rightArrow, modifiers: .command)
-                    .help("Next Week (⌘→)")
+                    .help(scope == .week ? "Next Week (⌘→)" : "Next Month (⌘→)")
             }
             .labelStyle(.iconOnly)
             .buttonStyle(PageControlStyle(horizontalPadding: 9))
