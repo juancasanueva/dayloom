@@ -139,7 +139,9 @@ struct TaskDetailView: View {
             HStack {
                 Image(systemName: "plus")
                     .foregroundStyle(.secondary)
-                TextField("Add subtask", text: $newSubtaskTitle)
+                // Hidden label: a grouped form would otherwise show the title as a label and put the field out of sight.
+                TextField("Add subtask", text: $newSubtaskTitle, prompt: Text("Add subtask"))
+                    .labelsHidden()
                     .textFieldStyle(.plain)
                     .onSubmit(addSubtask)
             }
@@ -211,7 +213,8 @@ private struct SubtaskRow: View {
     var body: some View {
         HStack(spacing: 8) {
             CompletionButton(task: subtask)
-            TextField("Subtask", text: $subtask.title)
+            TextField("Subtask", text: $subtask.title, prompt: Text("Subtask"))
+                .labelsHidden()
                 .textFieldStyle(.plain)
                 .strikethrough(subtask.isDone)
                 .foregroundStyle(subtask.isDone ? .secondary : .primary)
