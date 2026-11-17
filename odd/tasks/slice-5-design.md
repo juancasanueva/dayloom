@@ -33,11 +33,11 @@ Not in scope (not chosen): calendar events inside the task lists ("Events alongs
 |----|-------|-------|--------|----------|
 | T1 | S1 | inline | done | commit 6e02ad8; light + dark screenshots |
 | T2 | S2, S1.2–S1.3 | inline | done | RED→GREEN 8 tests (206 total); commit a6b7073; app: select by click, ↓ moves across days, board still works |
-| T3 | S3.1 board | inline | pending | |
-| T4 | S3.1 calendar | inline | pending | |
-| T5 | S3.1 habits | inline | pending | |
-| T6 | S3.1 notes | inline | pending | |
-| T7 | S3.1 sidebar, details panel, launcher, Settings | inline | pending | |
+| T3 | S3.1 board | delegated | done | commit c32416b; 206 tests; shared `TimeEmphasis.color` |
+| T4 | S3.1 calendar | delegated | done | commits c349fbd, 973fa8f; week shortcuts verified in app |
+| T5 | S3.1 habits | delegated | done | commit 9daf2b5; RED→GREEN 4 tests (210) |
+| T6 | S3.1 notes | delegated | done | commit a64d04d; RED→GREEN 6 tests (216); search moved in-panel, ⌘F verified |
+| T7 | S3.1 sidebar, details panel, launcher, Settings | delegated | in progress | |
 
 Route evidence: one visual language needs one hand; screens share the running app for screenshot checks, so parallel writers would collide on builds and app state. No Writer trigger. Checkpoint with the user after T2 (design direction is a product decision).
 Forecast: ~1,200–1,800 authored changed lines → over 400; chain strategy asked before the first PR.
@@ -48,3 +48,5 @@ Risk: item 6 (visual changes; no test catches a layout regression) → independe
 - L1 (2026-11-17, user): "ok, the app was a lot of functionality which is great. But the design is not as nice as [the reference]. For ecample, our Upcoming list view is this: [screenshot] and [the reference] has this: [screenshot]" (reference name redacted per the standing rule).
 - L2 (2026-11-17, user): "Whole app" (answer to: task lists only / task lists + events in Upcoming / whole app).
 - L3: T1–T2 done. Palette is original (warm stone canvas, paper panel, linen cards; adaptive light/dark). Removing the toolbar title left toolbar items on the leading edge; a principal spacer restores the trailing inspector button, and the List/Board switch moved into the page header. Lists moved from `List` to cards in a `ScrollView`, so arrow-key selection and Delete are reimplemented (`ListNavigation`, tested). Checkpoint: design direction shown to the user before T3–T7.
+- L4 (2026-11-17, user): "go ahead with the rest of the app".
+- L5: T3–T7 routed to one bounded writer each, sequentially (Writer trigger: long-session context backstop; sequential because screenshot checks share one running app). Writers ran under a real-data safety rule (navigate, hover, select, screenshots only). Parent reviewed each diff surface, re-ran the suite, and fixed seams: shared `TimeEmphasis.color` (T3), shared `PageControlStyle` in the calendar (after T5), notes search moved from the toolbar into the panel because `.searchable` pushed the inspector toggle to the middle (T6). Known pre-existing issue: calendar day headers drift from grid columns when scroll bars are always visible.
