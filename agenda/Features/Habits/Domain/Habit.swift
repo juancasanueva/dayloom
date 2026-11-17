@@ -76,12 +76,14 @@ final class Habit {
         completion(on: date, calendar: calendar) != nil
     }
 
-    /// Marks the day as done, or clears it when it already was. One completion per day.
+    /// Marks the day as done, or clears it when it already was. One completion per day;
+    /// clearing removes every completion of the day, since sync can bring in copies.
     func toggle(on date: Date, calendar: Calendar = .current) {
-        if let existing = completion(on: date, calendar: calendar) {
+        let existing = (completions ?? []).filter { calendar.isDate($0.day, inSameDayAs: date) }
+        if !existing.isEmpty {
             // Detach first so the relationship reflects the removal before the context saves.
-            completions?.removeAll { $0 === existing }
-            modelContext?.delete(existing)
+            completions?.removeAll { completion in existing.contains { $0 === completion } }
+            existing.forEach { modelContext?.delete($0) }
         } else {
             let completion = HabitCompletion(day: calendar.startOfDay(for: date))
             modelContext?.insert(completion)

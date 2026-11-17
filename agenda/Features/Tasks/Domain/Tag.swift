@@ -17,12 +17,15 @@ final class Tag {
     var name: String = ""
     var colorRaw: String = TagColor.blue.rawValue
     var createdAt: Date = Date.now
+    /// Random key that breaks ties when sync duplicates are merged, so every Mac keeps the same copy.
+    var mergeKey: String = ""
 
     var tasks: [TaskItem]? = []
 
     init(name: String, color: TagColor) {
         self.name = name
         self.colorRaw = color.rawValue
+        self.mergeKey = UUID().uuidString
     }
 
     var color: TagColor {

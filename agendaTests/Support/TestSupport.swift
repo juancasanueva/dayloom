@@ -21,9 +21,11 @@ enum TestClock {
 
 @MainActor
 func makeInMemoryContext() throws -> ModelContext {
+    // The app's in-memory configuration never syncs. A bare in-memory configuration would
+    // default to `.automatic` and mirror test data to iCloud in builds with the entitlement.
     let container = try ModelContainer(
         for: PlannerSchema.schema,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        configurations: PlannerSchema.configuration(inMemory: true)
     )
     return ModelContext(container)
 }
