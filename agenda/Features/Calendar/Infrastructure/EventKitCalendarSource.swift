@@ -1,7 +1,7 @@
 import AppKit
 import EventKit
 
-/// Reads events from the system calendars (iCloud, Google, Exchange accounts added in macOS).
+/// Reads and adds events in the system calendars (iCloud, Google, Exchange accounts added in macOS).
 final class EventKitCalendarSource: CalendarEventSource {
     private let store = EKEventStore()
 
@@ -36,6 +36,22 @@ final class EventKitCalendarSource: CalendarEventSource {
                 url: event.url
             )
         }
+    }
+
+    func createEvent(title: String, start: Date, end: Date, isAllDay: Bool) throws {
+        guard access == .granted else { throw CalendarWriteError.accessDenied }
+        guard let calendar = store.defaultCalendarForNewEvents, calendar.allowsContentModifications else {
+            throw CalendarWriteError.readOnlyCalendar
+        }
+
+        let event = EKEvent(eventStore: store)
+        event.title = title
+        event.calendar = calendar
+        event.isAllDay = isAllDay
+        event.startDate = start
+        // EventKit treats an all-day event that ends on its start day as a single day.
+        event.endDate = isAllDay ? start : end
+        try store.save(event, span: .thisEvent, commit: true)
     }
 
     func changes() -> AsyncStream<Void> {

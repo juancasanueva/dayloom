@@ -72,4 +72,38 @@ struct WeekCalendarModelTests {
         #expect(model.access == .granted)
         #expect(model.events.map(\.id) == ["This week"])
     }
+
+    @Test func createEventSavesAndReloadsTheWeek() throws {
+        let (model, source) = makeModel(access: .granted)
+        model.reload()
+
+        try model.createEvent(
+            title: "Review",
+            start: TestClock.date(2026, 11, 19, 14),
+            end: TestClock.date(2026, 11, 19, 15),
+            isAllDay: false
+        )
+
+        let created = try #require(source.entries.last)
+        #expect(source.entries.count == 3)
+        #expect(created.title == "Review")
+        #expect(created.start == TestClock.date(2026, 11, 19, 14))
+        #expect(created.end == TestClock.date(2026, 11, 19, 15))
+        #expect(!created.isAllDay)
+        #expect(model.events.map(\.id) == ["This week", created.id])
+    }
+
+    @Test func createEventWithoutAccessThrowsAndKeepsEvents() {
+        let (model, source) = makeModel(access: .denied)
+
+        #expect(throws: CalendarWriteError.accessDenied) {
+            try model.createEvent(
+                title: "Review",
+                start: TestClock.date(2026, 11, 19, 14),
+                end: TestClock.date(2026, 11, 19, 15),
+                isAllDay: false
+            )
+        }
+        #expect(source.entries.count == 2)
+    }
 }
