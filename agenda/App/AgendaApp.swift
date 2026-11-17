@@ -5,6 +5,8 @@ import SwiftUI
 struct AgendaApp: App {
     @State private var appState = AppState()
     @State private var calendarModel = WeekCalendarModel(source: EventKitCalendarSource())
+    /// Kept alive for the app's lifetime; releasing it unregisters the shortcut.
+    @State private var launcherHotKey: GlobalHotKey?
     private let modelContainer = PlannerSchema.makeContainer()
 
     var body: some Scene {
@@ -12,11 +14,22 @@ struct AgendaApp: App {
             RootView()
                 .environment(appState)
                 .environment(calendarModel)
+                .task { registerLauncherHotKey() }
         }
         .modelContainer(modelContainer)
         .defaultSize(width: 1180, height: 760)
         .commands {
             PlannerCommands(appState: appState)
+        }
+    }
+
+    /// ⌃⌥Space brings the app forward with the launcher open, even from another app.
+    private func registerLauncherHotKey() {
+        guard launcherHotKey == nil else { return }
+        let appState = appState
+        launcherHotKey = GlobalHotKey.launcher {
+            NSApp.activate()
+            appState.isLauncherPresented = true
         }
     }
 }
@@ -28,6 +41,8 @@ private struct PlannerCommands: Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Task") { appState.requestQuickAdd() }
                 .keyboardShortcut("n")
+            Button("Quick Launcher") { appState.isLauncherPresented.toggle() }
+                .keyboardShortcut("k")
         }
 
         CommandGroup(after: .sidebar) {
@@ -48,6 +63,8 @@ private struct PlannerCommands: Commands {
                 .keyboardShortcut("4")
             Button("Completed") { appState.selection = .tasks(.completed) }
                 .keyboardShortcut("5")
+            Button("Habits") { appState.selection = .habits }
+                .keyboardShortcut("6")
         }
     }
 }

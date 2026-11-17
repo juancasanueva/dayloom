@@ -4,6 +4,7 @@ import SwiftData
 
 enum SidebarSelection: Hashable {
     case calendar
+    case habits
     case tasks(TaskScope)
 }
 
@@ -13,6 +14,7 @@ final class AppState {
     var selection: SidebarSelection? = .tasks(.today)
     private(set) var selectedTaskID: PersistentIdentifier?
     var isInspectorPresented = false
+    var isLauncherPresented = false
     /// Set by the "New Task" command; the visible task list consumes it by focusing quick add.
     var pendingQuickAdd = false
 

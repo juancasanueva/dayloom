@@ -10,10 +10,14 @@ struct TaskListView: View {
     @Query(sort: \TaskItem.createdAt) private var allTasks: [TaskItem]
     @Query(sort: \Tag.name) private var tags: [Tag]
 
+    @AppStorage(TaskLayout.storageKey) private var layout: TaskLayout = .list
     @State private var newTitle = ""
     @FocusState private var isQuickAddFocused: Bool
 
     private var query: TaskQuery { TaskQuery() }
+
+    /// Completed has no statuses to arrange, so it always shows the list.
+    private var showsBoard: Bool { scope != .completed && layout == .board }
 
     private var scopeTag: Tag? {
         guard case .tag(let id) = scope else { return nil }
@@ -33,30 +37,71 @@ struct TaskListView: View {
                 quickAddBar
             }
 
-            List(selection: selection) {
-                if scope == .upcoming {
-                    ForEach(query.upcomingSections(from: allTasks)) { section in
-                        Section(DayFormatting.relativeTitle(for: section.day)) {
-                            rows(section.tasks, query: query)
-                        }
-                    }
-                } else {
-                    rows(tasks, query: query)
-                }
+            if scope == .today {
+                TodayHabitsStrip()
             }
-            .listStyle(.inset)
-            .overlay {
-                if tasks.isEmpty { emptyState }
+
+            if showsBoard {
+                board(query: query)
+            } else {
+                list(tasks, query: query)
             }
         }
         .navigationTitle(title)
         .navigationSubtitle(tasks.isEmpty ? "" : "\(tasks.count) \(tasks.count == 1 ? "task" : "tasks")")
+        .toolbar {
+            if scope != .completed {
+                ToolbarItem {
+                    layoutPicker
+                }
+            }
+        }
         .onDeleteCommand(perform: deleteSelectedTask)
         .onChange(of: appState.pendingQuickAdd, initial: true) { _, pending in
             guard pending else { return }
             isQuickAddFocused = true
             appState.pendingQuickAdd = false
         }
+    }
+
+    private func list(_ tasks: [TaskItem], query: TaskQuery) -> some View {
+        List(selection: selection) {
+            if scope == .upcoming {
+                ForEach(query.upcomingSections(from: allTasks)) { section in
+                    Section(DayFormatting.relativeTitle(for: section.day)) {
+                        rows(section.tasks, query: query)
+                    }
+                }
+            } else {
+                rows(tasks, query: query)
+            }
+        }
+        .listStyle(.inset)
+        .overlay {
+            if tasks.isEmpty { emptyState }
+        }
+    }
+
+    private func board(query: TaskQuery) -> some View {
+        TaskBoardView(
+            columns: TaskBoard(now: query.now, calendar: query.calendar).columns(from: allTasks, in: scope),
+            isOverdue: query.isOverdue,
+            onDrop: { payloads, status in
+                TaskBoard().drop(payloads, onto: status, from: allTasks)
+            },
+            cardMenu: contextMenu(for:)
+        )
+    }
+
+    private var layoutPicker: some View {
+        Picker("Layout", selection: $layout) {
+            ForEach(TaskLayout.allCases) { layout in
+                Label(layout.title, systemImage: layout.systemImage)
+                    .tag(layout)
+            }
+        }
+        .pickerStyle(.segmented)
+        .help("Show tasks as a list or a board")
     }
 
     private func rows(_ tasks: [TaskItem], query: TaskQuery) -> some View {
