@@ -34,6 +34,8 @@ final class Note {
     var isPinned: Bool = false
     /// Start of the day for a daily note, `nil` for any other note.
     var dailyDate: Date?
+    /// Random key that breaks ties when sync duplicates are merged, so every Mac keeps the same copy.
+    var mergeKey: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \NoteBlock.note)
     var blocks: [NoteBlock]? = []
@@ -42,6 +44,7 @@ final class Note {
         self.title = title
         self.createdAt = createdAt
         self.updatedAt = createdAt
+        self.mergeKey = UUID().uuidString
     }
 
     var orderedBlocks: [NoteBlock] {

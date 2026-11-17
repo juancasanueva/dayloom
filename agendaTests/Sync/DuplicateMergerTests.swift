@@ -6,7 +6,7 @@ import Testing
 @MainActor
 @Suite("Merging sync duplicates")
 struct DuplicateMergerTests {
-    let merger = DuplicateMerger(calendar: TestClock.calendar)
+    let merger = DuplicateMerger()
 
     private func makeTag(_ name: String, createdAt: Date, color: TagColor = .blue, in context: ModelContext) -> agenda.Tag {
         let tag = agenda.Tag(name: name, color: color)
@@ -118,6 +118,77 @@ struct DuplicateMergerTests {
 
         #expect(merger.mergeDuplicates(in: context).dailyNotes == 0)
         #expect(try context.fetch(FetchDescriptor<Note>()).count == 2)
+    }
+
+    // MARK: Ties and days (S5.1, S5.2)
+
+    @Test func newNotesAndTagsGetDistinctMergeKeys() {
+        let notes = [Note(title: "A"), Note(title: "A")]
+        let tags = [agenda.Tag(name: "A", color: .blue), agenda.Tag(name: "A", color: .blue)]
+
+        #expect(notes.allSatisfy { !$0.mergeKey.isEmpty })
+        #expect(notes[0].mergeKey != notes[1].mergeKey)
+        #expect(tags.allSatisfy { !$0.mergeKey.isEmpty })
+        #expect(tags[0].mergeKey != tags[1].mergeKey)
+    }
+
+    /// Two Macs see the same copies in different local orders; both must keep the same one.
+    @Test(arguments: [false, true])
+    func tagTieKeepsLowestMergeKeyWhateverTheOrder(reversed: Bool) throws {
+        let context = try makeInMemoryContext()
+        let created = TestClock.date(2026, 1, 1)
+        var tags = [("b-key", "first"), ("a-key", "second")].map { key, label -> agenda.Tag in
+            let tag = agenda.Tag(name: "Work", color: .blue)
+            tag.createdAt = created
+            tag.mergeKey = key
+            tag.colorRaw = label == "first" ? TagColor.red.rawValue : TagColor.green.rawValue
+            return tag
+        }
+        if reversed { tags.reverse() }
+        tags.forEach(context.insert)
+        try context.save()
+
+        merger.mergeDuplicates(in: context)
+        try context.save()
+
+        let remaining = try context.fetch(FetchDescriptor<agenda.Tag>())
+        #expect(remaining.map(\.mergeKey) == ["a-key"])
+    }
+
+    @Test(arguments: [false, true])
+    func dailyNoteTieKeepsLowestMergeKeyWhateverTheOrder(reversed: Bool) throws {
+        let context = try makeInMemoryContext()
+        let day = TestClock.date(2026, 11, 17)
+        var notes = [("b-key", "From B"), ("a-key", "From A")].map { key, text -> Note in
+            let note = Note(title: "Tuesday", createdAt: TestClock.date(2026, 11, 17, 7))
+            note.dailyDate = day
+            note.mergeKey = key
+            context.insert(note)
+            note.appendBlock(.text, text: text)
+            return note
+        }
+        if reversed { notes.reverse() }
+        try context.save()
+
+        merger.mergeDuplicates(in: context)
+        try context.save()
+
+        let remaining = try context.fetch(FetchDescriptor<Note>())
+        #expect(remaining.map(\.mergeKey) == ["a-key"])
+        #expect(remaining.first?.orderedBlocks.map(\.text) == ["From A", "From B"])
+    }
+
+    /// A note made on a Mac in another time zone stores a different day start; it is a different day.
+    @Test func dailyNotesWithDifferentStoredDaysAreNotMerged() throws {
+        let context = try makeInMemoryContext()
+        let utcDay = makeDailyNote(TestClock.date(2026, 11, 17), createdAt: TestClock.date(2026, 11, 17, 1), blocks: [(.text, "UTC")], in: context)
+        let otherZoneDay = makeDailyNote(TestClock.date(2026, 11, 17, 5), createdAt: TestClock.date(2026, 11, 17, 6), blocks: [(.text, "UTC-5")], in: context)
+        try context.save()
+
+        let report = merger.mergeDuplicates(in: context)
+
+        #expect(report.dailyNotes == 0)
+        #expect(Set(try context.fetch(FetchDescriptor<Note>()).map(\.mergeKey)) == [utcDay.mergeKey, otherZoneDay.mergeKey])
     }
 
     // MARK: Habit completions (S2.3, S2.4)

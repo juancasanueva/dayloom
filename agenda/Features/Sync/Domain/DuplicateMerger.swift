@@ -13,8 +13,6 @@ struct DuplicateMerger {
         var dailyNotes = 0
     }
 
-    var calendar: Calendar = .current
-
     /// Merges duplicates and returns how many records were removed of each kind.
     @discardableResult
     func mergeDuplicates(in context: ModelContext) -> Report {
@@ -34,7 +32,7 @@ struct DuplicateMerger {
         }
         var removed = 0
         for group in groups.values where group.count > 1 {
-            let ordered = group.sorted { ($0.createdAt, $0.name, $0.colorRaw) < ($1.createdAt, $1.name, $1.colorRaw) }
+            let ordered = group.sorted { ($0.createdAt, $0.mergeKey, $0.name) < ($1.createdAt, $1.mergeKey, $1.name) }
             let survivor = ordered[0]
             for duplicate in ordered.dropFirst() {
                 for task in duplicate.tasks ?? [] {
@@ -53,14 +51,16 @@ struct DuplicateMerger {
 
     // MARK: Daily notes
 
-    /// Daily notes for the same day become one; the copies' non-empty blocks are appended in order.
+    /// Daily notes for the same stored day become one; the copies' non-empty blocks are appended in order.
+    /// The stored day start is compared exactly: a note made in another time zone starts its day at a
+    /// different instant and is a different day, even if it falls on this Mac's local day.
     private func mergeDailyNotes(in context: ModelContext) -> Int {
         let descriptor = FetchDescriptor<Note>(predicate: #Predicate { $0.dailyDate != nil })
         let notes = (try? context.fetch(descriptor)) ?? []
-        let groups = Dictionary(grouping: notes) { calendar.startOfDay(for: $0.dailyDate ?? .distantPast) }
+        let groups = Dictionary(grouping: notes) { $0.dailyDate ?? .distantPast }
         var removed = 0
         for group in groups.values where group.count > 1 {
-            let ordered = group.sorted { ($0.createdAt, $0.title) < ($1.createdAt, $1.title) }
+            let ordered = group.sorted { ($0.createdAt, $0.mergeKey, $0.title) < ($1.createdAt, $1.mergeKey, $1.title) }
             let survivor = ordered[0]
             for duplicate in ordered.dropFirst() {
                 for block in duplicate.orderedBlocks where !isBlank(block) {
