@@ -23,11 +23,14 @@ struct RootView: View {
                 ContentUnavailableView("Pick a List", systemImage: "sidebar.left", description: Text("Choose a list or the calendar from the sidebar."))
             }
         }
+        .toolbarBackground(Theme.canvas, for: .windowToolbar)
         .inspector(isPresented: $appState.isInspectorPresented) {
             TaskInspector()
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 420)
         }
         .toolbar {
+            // Screens show their own large titles, so the toolbar has no title to push this to the trailing edge.
+            ToolbarItem(placement: .principal) { Spacer() }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     appState.isInspectorPresented.toggle()
