@@ -25,7 +25,7 @@ A native macOS planner that keeps your tasks, calendar, habits and notes in one 
 
 ## Requirements
 
-- macOS 27.2 or later
+- macOS 15 (Sequoia) or later
 - Xcode 27 to build
 
 ## Building
