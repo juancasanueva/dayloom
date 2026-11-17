@@ -117,7 +117,7 @@ private struct WeekNavigationControls: View {
             Button("Today", action: onToday)
                 .keyboardShortcut("t", modifiers: .command)
                 .help("Go to This Week (⌘T)")
-                .buttonStyle(HeaderControlStyle(horizontalPadding: 12))
+                .buttonStyle(PageControlStyle(horizontalPadding: 12))
 
             HStack(spacing: 2) {
                 Button("Previous Week", systemImage: "chevron.left", action: onPrevious)
@@ -128,36 +128,9 @@ private struct WeekNavigationControls: View {
                     .help("Next Week (⌘→)")
             }
             .labelStyle(.iconOnly)
-            .buttonStyle(HeaderControlStyle(horizontalPadding: 9))
+            .buttonStyle(PageControlStyle(horizontalPadding: 9))
         }
         .font(.callout.weight(.medium))
-    }
-}
-
-/// A quiet rounded control on the card surface, a little stronger under the pointer or when pressed.
-private struct HeaderControlStyle: ButtonStyle {
-    var horizontalPadding: CGFloat
-
-    func makeBody(configuration: Configuration) -> some View {
-        HeaderControl(configuration: configuration, horizontalPadding: horizontalPadding)
-    }
-
-    private struct HeaderControl: View {
-        let configuration: ButtonStyleConfiguration
-        let horizontalPadding: CGFloat
-        @State private var isHovered = false
-
-        var body: some View {
-            configuration.label
-                .padding(.horizontal, horizontalPadding)
-                .frame(minHeight: 28)
-                .background(
-                    configuration.isPressed ? Theme.hairline : (isHovered ? Theme.cardHover : Theme.card),
-                    in: RoundedRectangle(cornerRadius: 8)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 8))
-                .onHover { isHovered = $0 }
-        }
     }
 }
 
