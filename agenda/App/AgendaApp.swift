@@ -7,7 +7,7 @@ struct AgendaApp: App {
     @State private var calendarModel = WeekCalendarModel(source: EventKitCalendarSource())
     /// Kept alive for the app's lifetime; releasing it unregisters the shortcut.
     @State private var launcherHotKey: GlobalHotKey?
-    private let modelContainer = PlannerSchema.makeContainer()
+    private let modelContainer = PlannerSchema.makeContainer(inMemory: PlannerSchema.isRunningTests)
 
     var body: some Scene {
         WindowGroup {
