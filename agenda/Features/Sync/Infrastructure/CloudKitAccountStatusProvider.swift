@@ -23,6 +23,15 @@ final class CloudKitAccountStatusProvider: AccountStatusProvider {
         }
     }
 
+    private static func kind(of event: NSPersistentCloudKitContainer.Event) -> SyncEvent.Kind {
+        switch event.type {
+        case .setup: .setup
+        case .import: .import
+        case .export: .export
+        @unknown default: .export
+        }
+    }
+
     func syncEvents() -> AsyncStream<SyncEvent> {
         AsyncStream { continuation in
             let task = Task {
@@ -32,7 +41,8 @@ final class CloudKitAccountStatusProvider: AccountStatusProvider {
                     guard let event = notification.userInfo?[key] as? NSPersistentCloudKitContainer.Event else { continue }
                     continuation.yield(SyncEvent(
                         endDate: event.endDate,
-                        errorDescription: event.succeeded ? nil : (event.error?.localizedDescription ?? "Sync failed.")
+                        errorDescription: event.succeeded ? nil : (event.error?.localizedDescription ?? "Sync failed."),
+                        kind: Self.kind(of: event)
                     ))
                 }
                 continuation.finish()

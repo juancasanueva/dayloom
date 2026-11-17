@@ -55,10 +55,17 @@ enum SyncStatus: Equatable {
 
 /// A finished or running sync step (setup, import, or export).
 struct SyncEvent: Equatable {
+    enum Kind: Equatable {
+        case setup
+        case `import`
+        case export
+    }
+
     /// `nil` while the step is still running.
     var endDate: Date?
     /// Set when the step failed.
     var errorDescription: String?
+    var kind: Kind = .export
 }
 
 /// Port for reading the iCloud account state and sync activity.

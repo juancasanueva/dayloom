@@ -95,4 +95,19 @@ struct SyncStatusTests {
 
         #expect(model.status == .unavailable)
     }
+
+    // MARK: Merge trigger (R4: merge only after a finished import)
+
+    @Test func onlySuccessfulFinishedImportsTriggerAMerge() async {
+        let model = SyncStatusModel(provider: StaticAccountStatusProvider(status: .available))
+
+        model.record(SyncEvent(endDate: nil, errorDescription: nil, kind: .import))
+        model.record(SyncEvent(endDate: TestClock.now, errorDescription: "Network", kind: .import))
+        model.record(SyncEvent(endDate: TestClock.now, errorDescription: nil, kind: .export))
+        model.record(SyncEvent(endDate: TestClock.now, errorDescription: nil, kind: .setup))
+        #expect(model.completedImports == 0)
+
+        model.record(SyncEvent(endDate: TestClock.now, errorDescription: nil, kind: .import))
+        #expect(model.completedImports == 1)
+    }
 }

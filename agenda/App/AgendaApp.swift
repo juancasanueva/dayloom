@@ -9,7 +9,6 @@ struct AgendaApp: App {
     /// Kept alive for the app's lifetime; releasing it unregisters the shortcut.
     @State private var launcherHotKey: GlobalHotKey?
     @State private var syncStatus: SyncStatusModel
-    @Environment(\.scenePhase) private var scenePhase
     private let modelContainer: ModelContainer
 
     init() {
@@ -25,14 +24,12 @@ struct AgendaApp: App {
                 .environment(calendarModel)
                 .task { registerLauncherHotKey() }
                 .task { await observeSync() }
+                .onChange(of: syncStatus.completedImports) { mergeSyncDuplicates() }
         }
         .modelContainer(modelContainer)
         .defaultSize(width: 1180, height: 760)
         .commands {
             PlannerCommands(appState: appState)
-        }
-        .onChange(of: scenePhase, initial: true) { _, phase in
-            if phase == .active { mergeSyncDuplicates() }
         }
 
         Settings {
@@ -47,8 +44,8 @@ struct AgendaApp: App {
         await syncStatus.observeChanges()
     }
 
-    /// Sync can't enforce uniqueness, so copies made on two Macs are folded together
-    /// at launch and whenever the app comes forward.
+    /// Sync can't enforce uniqueness, so copies made on two Macs are folded together after each
+    /// finished import, never mid-import, when a copy could be missing its blocks or task links.
     private func mergeSyncDuplicates() {
         let context = modelContainer.mainContext
         DuplicateMerger().mergeDuplicates(in: context)

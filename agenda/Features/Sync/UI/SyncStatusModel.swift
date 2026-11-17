@@ -7,6 +7,9 @@ final class SyncStatusModel {
     private(set) var lastSynced: Date?
     /// Description of the latest failed sync step, cleared by the next success.
     private(set) var problem: String?
+    /// Counts imports that finished successfully. Merging duplicates waits for these, because
+    /// a record can arrive before its related records while an import is still running.
+    private(set) var completedImports = 0
     private var account: SyncStatus = .checking
     private let provider: AccountStatusProvider
     /// False when the store had to open without iCloud, so nothing syncs whatever the account says.
@@ -35,6 +38,9 @@ final class SyncStatusModel {
         } else {
             problem = nil
             lastSynced = max(lastSynced ?? endDate, endDate)
+            if event.kind == .import {
+                completedImports += 1
+            }
         }
     }
 
