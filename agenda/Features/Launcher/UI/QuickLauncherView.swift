@@ -32,7 +32,11 @@ struct QuickLauncherView: View {
                 .padding(.top, 96)
                 .padding(.horizontal, 24)
         }
-        .onAppear { isFieldFocused = true }
+        // Focus once the overlay is on screen; set during appearance, the field isn't ready to take it.
+        .task {
+            await Task.yield()
+            isFieldFocused = true
+        }
         .onChange(of: text) {
             selectedIndex = 0
             errorMessage = nil
