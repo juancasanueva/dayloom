@@ -60,6 +60,8 @@ struct WeekView: View {
                         .padding(.top, 8)
                         .padding(.bottom, 12)
                     }
+                    // No scroll bar: an always-visible one would narrow the grid but not the day headers above it.
+                    .scrollIndicators(.never)
                     .onAppear { proxy.scrollTo(WeekGridMetrics.initialScrollHour, anchor: .top) }
                 }
             }
