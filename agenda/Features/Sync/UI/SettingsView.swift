@@ -36,10 +36,13 @@ struct SettingsView: View {
     @AppStorage("settingsTab") private var selection: Tab = .appearance
 
     var body: some View {
+        // ForEach reruns its content only when what the closure captures changes. Captured
+        // through `self`, @AppStorage looks unchanged after a switch, so capture the value instead.
+        let current = selection
         VStack(spacing: 0) {
             HStack(spacing: 4) {
                 ForEach(Tab.allCases) { tab in
-                    SettingsTabButton(tab: tab, isSelected: tab == selection) { selection = tab }
+                    SettingsTabButton(tab: tab, isSelected: tab == current) { selection = tab }
                 }
             }
             .padding(.top, 4)
