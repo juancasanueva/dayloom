@@ -2,6 +2,8 @@
 
 A native macOS planner that keeps your tasks, calendar, habits and notes in one window, synced across your Macs through iCloud.
 
+![Dayloom's Today board with a video-call task open in the inspector](docs/images/today.png)
+
 ## Features
 
 - **Tasks**: Inbox, Today, Upcoming and Completed lists, tags, and a status board.
@@ -13,6 +15,25 @@ A native macOS planner that keeps your tasks, calendar, habits and notes in one 
 - **Notes**: block-based notes with headings, lists, checklists, linked tasks and calendar events, plus a daily note.
 - **Appearance**: light, dark or system appearance, with a choice of color themes.
 - **iCloud sync**: all data syncs through your private iCloud database. Settings (⌘,) shows the sync status.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/calendar-week.png" alt="Week view with calendar events and scheduled tasks side by side"><br><sub><b>Week</b>: events and scheduled tasks side by side; video calls show a camera.</sub></td>
+    <td width="50%"><img src="docs/images/calendar-day.png" alt="Day view of the calendar"><br><sub><b>Day</b>: one day in detail, with the current time.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/calendar-month.png" alt="Month view of the calendar"><br><sub><b>Month</b>: the whole month at a glance.</sub></td>
+    <td width="50%"><img src="docs/images/launcher.png" alt="Quick Launcher turning a sentence into a scheduled task"><br><sub><b>Quick Launcher</b>: type a sentence, get a dated, tagged task or event.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/notes.png" alt="Block-based note with headings, a checklist and a linked task"><br><sub><b>Notes</b>: headings, lists, checklists and linked tasks.</sub></td>
+    <td width="50%"><img src="docs/images/habits.png" alt="Habits with weekly progress and streaks"><br><sub><b>Habits</b>: weekly progress and streaks.</sub></td>
+  </tr>
+</table>
+
+Screenshots use sample data: Debug builds launched with `-DayloomDemo` open an in-memory store with sample tasks, habits, notes and calendar events instead of your own.
 
 ## Keyboard shortcuts
 

@@ -4,17 +4,29 @@ import SwiftUI
 
 @main
 struct AgendaApp: App {
-    @State private var appState = AppState()
-    @State private var calendarModel = WeekCalendarModel(source: EventKitCalendarSource())
+    @State private var appState: AppState
+    @State private var calendarModel: WeekCalendarModel
     /// Kept alive for the app's lifetime; releasing it unregisters the shortcut.
     @State private var launcherHotKey: GlobalHotKey?
     @State private var syncStatus: SyncStatusModel
     private let modelContainer: ModelContainer
 
     init() {
-        let store = PlannerSchema.openAppStore()
+        // Debug builds launched with -DayloomDemo show sample data for screenshots, never the user's own.
+        let isDemo = DemoData.isEnabled()
+        let store = isDemo ? PlannerSchema.openStore(inMemory: true) : PlannerSchema.openAppStore()
         let container = store.container
         modelContainer = container
+
+        let appState = AppState()
+        if isDemo {
+            appState.select(task: DemoData.seed(container.mainContext).persistentModelID)
+        }
+        _appState = State(initialValue: appState)
+        _calendarModel = State(initialValue: WeekCalendarModel(
+            source: isDemo ? DemoData.calendarSource() : EventKitCalendarSource()
+        ))
+
         // The CloudKit account lookup traps without the entitlement; a local-only copy reports that instead.
         let provider: AccountStatusProvider = PlannerSchema.hasICloudEntitlement
             ? CloudKitAccountStatusProvider()
@@ -27,11 +39,11 @@ struct AgendaApp: App {
         )
         // Followed for the app's lifetime, so closing a window neither freezes Settings nor stops merges.
         // Unit tests never reach CloudKit.
-        if !PlannerSchema.isRunningTests {
+        if !PlannerSchema.isRunningTests && !isDemo {
             syncStatus.startObserving()
         }
         // Unit tests load XCTest; reminders stay out of them. The UI sandbox (an in-memory store) still gets them.
-        if NSClassFromString("XCTestCase") == nil {
+        if NSClassFromString("XCTestCase") == nil && !isDemo {
             NotificationScheduler.shared.start()
         }
         _syncStatus = State(initialValue: syncStatus)
