@@ -10,6 +10,7 @@ enum SlashCommand: CaseIterable, Identifiable {
     case task
     case existingTask
     case event
+    case image
 
     var id: Self { self }
 
@@ -23,6 +24,7 @@ enum SlashCommand: CaseIterable, Identifiable {
         case .task: "Task"
         case .existingTask: "Existing Task"
         case .event: "Calendar Event"
+        case .image: "Image"
         }
     }
 
@@ -36,6 +38,7 @@ enum SlashCommand: CaseIterable, Identifiable {
         case .task: "checkmark.circle"
         case .existingTask: "link"
         case .event: "calendar"
+        case .image: "photo"
         }
     }
 
@@ -48,6 +51,7 @@ enum SlashCommand: CaseIterable, Identifiable {
         case .divider: .divider
         case .task, .existingTask: .task
         case .event: .event
+        case .image: .image
         }
     }
 
@@ -61,6 +65,7 @@ enum SlashCommand: CaseIterable, Identifiable {
         case .task: ["task"]
         case .existingTask: ["task", "existing", "link"]
         case .event: ["event", "calendar", "meeting"]
+        case .image: ["image", "picture", "photo"]
         }
     }
 

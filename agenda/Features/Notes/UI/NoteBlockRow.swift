@@ -12,6 +12,7 @@ enum BlockAction {
     case command(SlashCommand)
     case convertToTask
     case openTask(TaskItem)
+    case dropImages([NSItemProvider])
     case delete
 }
 
@@ -38,6 +39,7 @@ struct NoteBlockRow: View {
             }
         }
         .contextMenu { blockMenu }
+        .onDrop(of: NoteImageSource.dropTypes, isTargeted: nil) { perform(.dropImages($0)) }
         .onChange(of: block.text) {
             highlightedCommand = 0
             if SlashCommand.query(in: block.text) == nil {
@@ -73,6 +75,8 @@ struct NoteBlockRow: View {
                 .accessibilityHidden(true)
         case .event:
             EventBlockView(block: block)
+        case .image:
+            ImageBlockView(block: block)
         case .text, .heading, .bullet, .checklist, .task:
             textRow
         }
@@ -124,7 +128,7 @@ struct NoteBlockRow: View {
             if let task = block.task {
                 CompletionButton(task: task)
             }
-        case .text, .heading, .divider, .event:
+        case .text, .heading, .divider, .event, .image:
             EmptyView()
         }
     }
@@ -136,7 +140,7 @@ struct NoteBlockRow: View {
         case .bullet: "List item"
         case .checklist: "To-do"
         case .task: "Task name"
-        case .divider, .event: ""
+        case .divider, .event, .image: ""
         }
     }
 
@@ -299,6 +303,37 @@ private struct SlashMenu: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
         .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius).strokeBorder(Theme.hairline))
         .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
+    }
+}
+
+/// A picture inside a note, as wide as the text at most. Decoded once per change of its data.
+private struct ImageBlockView: View {
+    let block: NoteBlock
+    @State private var image: NSImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: image.size.width, maxHeight: 520)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
+                    .accessibilityLabel("Image")
+            } else {
+                Label("Image unavailable", systemImage: "photo")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 4)
+        .task(id: block.imageData?.count) {
+            image = block.imageData.flatMap(NSImage.init(data:))
+        }
     }
 }
 

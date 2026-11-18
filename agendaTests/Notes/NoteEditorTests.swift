@@ -134,7 +134,7 @@ struct NoteEditorTests {
         #expect(focus.block === block)
     }
 
-    @Test(arguments: [NoteBlockKind.divider, .event])
+    @Test(arguments: [NoteBlockKind.divider, .event, .image])
     func returnOnNonTextBlockAddsTextBelow(kind: NoteBlockKind) throws {
         let context = try makeInMemoryContext()
         let note = makeNote([(kind, "keep")], in: context)
@@ -252,6 +252,7 @@ struct NoteEditorTests {
         #expect(SlashCommand.matching("che") == [.checklist])
         #expect(SlashCommand.matching("TA") == [.task, .existingTask])
         #expect(SlashCommand.matching("link") == [.existingTask])
+        #expect(SlashCommand.matching("pic") == [.image])
         #expect(SlashCommand.matching("list") == [.bullet, .checklist])
         #expect(SlashCommand.matching("zzz").isEmpty)
     }
@@ -415,6 +416,77 @@ struct NoteEditorTests {
 
         #expect(note.orderedBlocks.isEmpty)
         #expect(try context.fetch(FetchDescriptor<TaskItem>()).map(\.title) == ["Keep me"])
+    }
+
+    // MARK: Images
+
+    private let imageBytes = Data([0x89, 0x50, 0x4E, 0x47])
+
+    @Test func imageCommandOnlyClearsText() throws {
+        let context = try makeInMemoryContext()
+        let note = makeNote([(.text, "/ima")], in: context)
+        let block = note.orderedBlocks[0]
+
+        editor.apply(.image, to: block, in: context)
+
+        #expect(block.kind == .text)
+        #expect(block.text == "")
+        #expect(block.imageData == nil)
+    }
+
+    @Test func imageFillsAnEmptyTextBlockAndAddsTextBelow() throws {
+        let context = try makeInMemoryContext()
+        let note = makeNote([(.text, "Before"), (.text, ""), (.text, "After")], in: context)
+
+        let focus = editor.insertImage(imageBytes, at: note.orderedBlocks[1])
+
+        let blocks = note.orderedBlocks
+        #expect(blocks.map(\.kind) == [.text, .image, .text, .text])
+        #expect(blocks.map(\.text) == ["Before", "", "", "After"])
+        #expect(blocks[1].imageData == imageBytes)
+        #expect(focus.block === blocks[2])
+        #expect(focus.caret == 0)
+        #expect(note.updatedAt == TestClock.now)
+    }
+
+    @Test func imageGoesBelowABlockWithText() throws {
+        let context = try makeInMemoryContext()
+        let note = makeNote([(.heading, "Trip"), (.text, "After")], in: context)
+
+        let focus = editor.insertImage(imageBytes, at: note.orderedBlocks[0])
+
+        let blocks = note.orderedBlocks
+        #expect(blocks.map(\.kind) == [.heading, .image, .text, .text])
+        #expect(blocks[0].text == "Trip")
+        #expect(blocks[1].imageData == imageBytes)
+        #expect(focus.block === blocks[2])
+    }
+
+    @Test func severalImagesStackInOrder() throws {
+        let context = try makeInMemoryContext()
+        let note = makeNote([(.text, "")], in: context)
+        let second = Data([1, 2, 3])
+
+        let focus = editor.insertImage(imageBytes, at: note.orderedBlocks[0])
+        editor.insertImage(second, at: focus.block)
+
+        let blocks = note.orderedBlocks
+        #expect(blocks.map(\.kind) == [.image, .image, .text])
+        #expect(blocks.map(\.imageData) == [imageBytes, second, nil])
+    }
+
+    @Test func backspaceAfterImageKeepsTheImage() throws {
+        let context = try makeInMemoryContext()
+        let note = makeNote([(.text, "")], in: context)
+        let focus = editor.insertImage(imageBytes, at: note.orderedBlocks[0])
+
+        #expect(editor.backspaceAtStart(focus.block) != nil)
+        #expect(note.orderedBlocks.map(\.kind) == [.image])
+
+        note.appendBlock(.text, text: "words")
+        #expect(editor.backspaceAtStart(note.orderedBlocks[1]) == nil)
+        #expect(note.orderedBlocks.map(\.kind) == [.image, .text])
+        #expect(editor.backspaceAtStart(note.orderedBlocks[0]) == nil)
     }
 
     // MARK: Events (S1.6)

@@ -106,7 +106,7 @@ struct NoteEditor {
             return NoteFocus(block: block, caret: 0)
         case .text:
             break
-        case .divider, .task, .event:
+        case .divider, .task, .event, .image:
             return nil
         }
 
@@ -121,7 +121,7 @@ struct NoteEditor {
         case .divider:
             delete(previous)
             return NoteFocus(block: block, caret: 0)
-        case .task, .event:
+        case .task, .event, .image:
             guard block.text.isEmpty else { return nil }
             delete(block)
             return NoteFocus(block: previous, caret: previous.text.count)
@@ -144,8 +144,8 @@ struct NoteEditor {
     // MARK: Commands
 
     /// Applies a slash command, clearing the typed `/word`.
-    /// `.event` and `.existingTask` only clear the text: the caller picks the event or task
-    /// and calls `setEvent` or `linkTask`.
+    /// `.event`, `.existingTask` and `.image` only clear the text: the caller picks the event,
+    /// task or picture and calls `setEvent`, `linkTask` or `insertImage`.
     @discardableResult
     func apply(_ command: SlashCommand, to block: NoteBlock, in context: ModelContext) -> NoteFocus {
         block.text = ""
@@ -158,7 +158,7 @@ struct NoteEditor {
             return makeDivider(block)
         case .task:
             convertToTask(block, in: context)
-        case .event, .existingTask:
+        case .event, .existingTask, .image:
             break
         }
         return NoteFocus(block: block, caret: 0)
@@ -186,6 +186,22 @@ struct NoteEditor {
         block.kind = .task
         block.syncTaskSnapshot()
         touch(block)
+    }
+
+    /// Puts an image in an empty text block, or below `block` otherwise, then adds text below
+    /// the image and returns its focus, so several images stack in order.
+    @discardableResult
+    func insertImage(_ data: Data, at block: NoteBlock) -> NoteFocus {
+        let target: NoteBlock
+        if block.kind == .text, block.text.isEmpty {
+            target = block
+            target.kind = .image
+        } else {
+            target = insertBelow(block, kind: .image)
+        }
+        target.imageData = data
+        touch(target)
+        return NoteFocus(block: insertBelow(target, kind: .text), caret: 0)
     }
 
     func setEvent(_ entry: CalendarEntry, on block: NoteBlock) {

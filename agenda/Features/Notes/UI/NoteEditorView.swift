@@ -1,5 +1,7 @@
+import AppKit
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Asks one block row to place its caret. The serial makes repeated requests distinct.
 struct CaretRequest: Equatable {
@@ -21,6 +23,9 @@ struct NoteEditorView: View {
     @State private var caretRequest: CaretRequest?
     @State private var eventTarget: NoteBlock?
     @State private var taskTarget: NoteBlock?
+    @State private var imageTarget: NoteBlock?
+    @State private var isImportingImage = false
+    @State private var pasteMonitor: Any?
 
     /// Built per edit so each change is stamped with the current time.
     private var editor: NoteEditor { NoteEditor() }
@@ -41,6 +46,9 @@ struct NoteEditorView: View {
                     .frame(height: 160)
                     .contentShape(Rectangle())
                     .onTapGesture(perform: focusEnd)
+                    .onDrop(of: NoteImageSource.dropTypes, isTargeted: nil) { providers in
+                        dropImages(providers, at: endBlock())
+                    }
                     .accessibilityHidden(true)
             }
             .lineSpacing(3)
@@ -67,6 +75,17 @@ struct NoteEditorView: View {
                 editor.linkTask(task, to: block)
             }
         }
+        .fileImporter(
+            isPresented: $isImportingImage,
+            allowedContentTypes: [.image],
+            allowsMultipleSelection: true
+        ) { result in
+            defer { imageTarget = nil }
+            guard let block = imageTarget, case .success(let urls) = result else { return }
+            addImages(NoteImageSource.images(at: urls), at: block)
+        }
+        .onAppear(perform: startPasteMonitor)
+        .onDisappear(perform: stopPasteMonitor)
     }
 
     /// A comfortable line length for writing.
@@ -132,12 +151,17 @@ struct NoteEditorView: View {
                 eventTarget = block
             } else if command == .existingTask {
                 taskTarget = block
+            } else if command == .image {
+                imageTarget = block
+                isImportingImage = true
             }
         case .convertToTask:
             editor.convertToTask(block, in: modelContext)
         case .openTask(let task):
             try? modelContext.save() // Swap the temporary ID for a permanent one before selecting it.
             appState.select(task: task.persistentModelID)
+        case .dropImages(let providers):
+            return dropImages(providers, at: block)
         case .delete:
             let neighbor = focusableNeighbor(of: block, offset: -1) ?? focusableNeighbor(of: block, offset: 1)
             editor.delete(block)
@@ -182,11 +206,68 @@ struct NoteEditorView: View {
 
     /// Focuses the trailing empty text block, adding one when the note doesn't end with it.
     private func focusEnd() {
+        place(NoteFocus(block: endBlock(), caret: 0))
+    }
+
+    /// The trailing empty text block, added when the note doesn't end with one.
+    private func endBlock() -> NoteBlock {
         if let last = note.orderedBlocks.last, last.kind.isTextLike, last.text.isEmpty {
-            place(NoteFocus(block: last, caret: 0))
-        } else {
-            place(NoteFocus(block: note.appendBlock(.text), caret: 0))
+            return last
         }
+        return note.appendBlock(.text)
+    }
+
+    // MARK: Images
+
+    /// Shrinks pictures off the main thread, then adds them at `block` in order.
+    private func addImages(_ images: [Data], at block: NoteBlock) {
+        guard !images.isEmpty else { return }
+        Task {
+            let prepared = await Task.detached(priority: .userInitiated) {
+                images.compactMap(NoteImage.prepared)
+            }.value
+            // The block may have been deleted while the images were being shrunk.
+            var target = block.note == nil ? endBlock() : block
+            for data in prepared {
+                target = editor.insertImage(data, at: target).block
+            }
+            if !prepared.isEmpty {
+                place(NoteFocus(block: target, caret: 0))
+            }
+        }
+    }
+
+    private func dropImages(_ providers: [NSItemProvider], at block: NoteBlock) -> Bool {
+        let accepted = providers.contains { provider in
+            NoteImageSource.dropTypes.contains { provider.hasItemConformingToTypeIdentifier($0.identifier) }
+        }
+        guard accepted else { return false }
+        Task {
+            addImages(await NoteImageSource.images(from: providers), at: block)
+        }
+        return true
+    }
+
+    /// ⌘V reaches the text field before any SwiftUI paste handler, and a plain-text field
+    /// ignores pictures, so pasted images are caught from the key event first.
+    private func startPasteMonitor() {
+        guard pasteMonitor == nil else { return }
+        pasteMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+                  event.charactersIgnoringModifiers == "v",
+                  let id = focusedBlock,
+                  let block = note.orderedBlocks.first(where: { $0.objectID == id }),
+                  let images = NoteImageSource.images(on: .general) else { return event }
+            addImages(images, at: block)
+            return nil
+        }
+    }
+
+    private func stopPasteMonitor() {
+        if let pasteMonitor {
+            NSEvent.removeMonitor(pasteMonitor)
+        }
+        pasteMonitor = nil
     }
 }
 

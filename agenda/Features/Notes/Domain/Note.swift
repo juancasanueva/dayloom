@@ -9,12 +9,13 @@ enum NoteBlockKind: String, CaseIterable, Codable {
     case divider
     case task
     case event
+    case image
 
     /// Blocks edited as a line of text.
     var isTextLike: Bool {
         switch self {
         case .text, .heading, .bullet, .checklist: true
-        case .divider, .task, .event: false
+        case .divider, .task, .event, .image: false
         }
     }
 
@@ -93,7 +94,7 @@ final class Note {
     }
 }
 
-/// One line of a note: text, a divider, a linked task, or a calendar event snapshot.
+/// One line of a note: text, a divider, a linked task, a calendar event snapshot, or an image.
 @Model
 final class NoteBlock {
     var kindRaw: String = NoteBlockKind.text.rawValue
@@ -110,6 +111,9 @@ final class NoteBlock {
     var eventStart: Date?
     var eventEnd: Date?
     var eventIsAllDay: Bool = false
+
+    /// The picture of an `.image` block, kept outside the database file and synced as an iCloud asset.
+    @Attribute(.externalStorage) var imageData: Data?
 
     init(kind: NoteBlockKind, text: String = "") {
         self.kindRaw = kind.rawValue
