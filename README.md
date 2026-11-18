@@ -4,6 +4,18 @@ A native macOS planner that keeps your tasks, calendar, habits and notes in one 
 
 ![Dayloom's Today board with a video-call task open in the inspector](docs/images/today.png)
 
+## Install
+
+With [Homebrew](https://brew.sh):
+
+```sh
+brew trust juancasanueva/tap
+brew tap juancasanueva/tap
+brew install --cask dayloom
+```
+
+Or download `Dayloom-<version>.zip` from the [latest release](https://github.com/juancasanueva/dayloom/releases/latest), unzip it and move `Dayloom.app` to Applications. Releases are signed with Developer ID and notarized by Apple.
+
 ## Features
 
 - **Tasks**: Inbox, Today, Upcoming and Completed lists, tags, and a status board.
@@ -65,6 +77,10 @@ Creating meetings signs in to Google or Zoom from the app. Each service needs it
 - **Google Meet** (`GoogleOAuthConfig.app`): a Google Cloud project with the Google Meet REST API enabled, an OAuth client of type **iOS** for bundle ID `com.juancasanueva.agenda`, and the scope `https://www.googleapis.com/auth/meetings.space.created`. While the consent screen is in Testing, only accounts listed under Audience → Test users can sign in.
 - **Zoom** (`ZoomOAuthConfig.app`): a user-managed General App in the Zoom App Marketplace with **Use Public Client OAuth** on, its **public client ID**, the scope `meeting:write:meeting`, and the PKCE redirect URL `http://127.0.0.1/callback` (registered without a port). Sign-in opens in the default browser and returns to a listener the app runs on `127.0.0.1:47823` only while signing in.
 - **Teams**: Microsoft only lets apps create Teams meetings for work or school accounts, so New Teams Meeting opens Teams to make a link to paste.
+
+### Releasing
+
+`scripts/release.sh` archives the app, exports it with Developer ID, notarizes and staples it, and checks the zip the way a user receives it. It needs an App Store Connect API key (`ASC_KEY_PATH`, `ASC_KEY_ID`, `ASC_ISSUER_ID`), and the team's Account Holder signed in to Xcode, because only they can create the Developer ID provisioning profile that carries the iCloud container. Upload `build/Dayloom-<version>.zip` to a GitHub release tagged `v<version>`; the Homebrew tap picks up new releases on its own.
 
 ## Tests
 
