@@ -2,72 +2,17 @@ import Foundation
 import Testing
 @testable import agenda
 
-// MARK: - Test doubles
-
-private final class StubTransport: HTTPTransport {
-    var responses: [(status: Int, body: String)] = []
-    var failure: Error?
-    private(set) var requests: [URLRequest] = []
-
-    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        requests.append(request)
-        if let failure { throw failure }
-        let next = responses.isEmpty ? (status: 500, body: "{}") : responses.removeFirst()
-        let response = HTTPURLResponse(url: request.url!, statusCode: next.status, httpVersion: nil, headerFields: nil)!
-        return (Data(next.body.utf8), response)
-    }
-}
-
-private final class StubAuthorizer: WebAuthorizer {
-    /// Builds the callback from the authorization URL, so it can echo the state back.
-    var respond: (URL) throws -> URL
-    private(set) var calls: [(url: URL, scheme: String)] = []
-
-    init(respond: @escaping (URL) throws -> URL) {
-        self.respond = respond
-    }
-
-    func authorize(url: URL, callbackScheme: String) async throws -> URL {
-        calls.append((url, callbackScheme))
-        return try respond(url)
-    }
-}
-
-private final class MemoryTokenStore: GoogleTokenStore {
-    var tokens: GoogleTokens?
-    init(_ tokens: GoogleTokens? = nil) { self.tokens = tokens }
-    func load() -> GoogleTokens? { tokens }
-    func save(_ tokens: GoogleTokens) throws { self.tokens = tokens }
-    func clear() { tokens = nil }
-}
-
 private enum Fixture {
     static let config = GoogleOAuthConfig(clientID: "1234-abc.apps.googleusercontent.com")
-    static let now = TestClock.now
-    static let pkce = PKCE(verifier: "dBjftJeZ4CVP-mJ92K9qkk8C8w2y4Lm_SVWlLHcRmSM")
+    static let now = OAuthFixture.now
+    static let pkce = OAuthFixture.pkce
     static let space = #"{"name":"spaces/x1","meetingUri":"https://meet.google.com/abc-mnop-xyz","meetingCode":"abc-mnop-xyz"}"#
     static let signedIn = #"{"access_token":"access-1","refresh_token":"refresh-1","expires_in":3599,"token_type":"Bearer"}"#
     static let refreshed = #"{"access_token":"access-2","expires_in":3599,"token_type":"Bearer"}"#
 
-    static func query(_ url: URL) -> [String: String] {
-        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        return Dictionary(uniqueKeysWithValues: items.map { ($0.name, $0.value ?? "") })
-    }
-
-    static func form(_ request: URLRequest) -> [String: String] {
-        var components = URLComponents()
-        components.percentEncodedQuery = String(decoding: request.httpBody ?? Data(), as: UTF8.self)
-        let items = components.queryItems ?? []
-        return Dictionary(uniqueKeysWithValues: items.map { ($0.name, $0.value ?? "") })
-    }
-
-    /// Answers the sign-in sheet with a code and the state it was given.
-    static func approvingAuthorizer() -> StubAuthorizer {
-        StubAuthorizer { url in
-            let state = query(url)["state"] ?? ""
-            return URL(string: "\(config.redirectURI)?state=\(state)&code=code-1")!
-        }
-    }
+    static func query(_ url: URL) -> [String: String] { OAuthFixture.query(url) }
+    static func form(_ request: URLRequest) -> [String: String] { OAuthFixture.form(request) }
+    static func approvingAuthorizer() -> StubAuthorizer { .approving(redirectURI: config.redirectURI) }
 
     static func service(
         store: MemoryTokenStore = MemoryTokenStore(),
@@ -111,7 +56,7 @@ struct GoogleOAuthTests {
     }
 
     @Test func authorizationURLAsksOnlyToCreateMeetings() {
-        let url = GoogleOAuth.authorizationURL(config: Fixture.config, pkce: Fixture.pkce, state: "state-1")
+        let url = OAuth.authorizationURL(config: Fixture.config, pkce: Fixture.pkce, state: "state-1")
         let query = Fixture.query(url)
 
         #expect(url.absoluteString.hasPrefix("https://accounts.google.com/o/oauth2/v2/auth?"))
@@ -126,20 +71,20 @@ struct GoogleOAuthTests {
 
     @Test func callbackGivesTheCodeWhenTheStateMatches() throws {
         let callback = URL(string: "\(Fixture.config.redirectURI)?state=state-1&code=code-1")!
-        #expect(try GoogleOAuth.code(fromCallback: callback, state: "state-1") == "code-1")
+        #expect(try OAuth.code(fromCallback: callback, state: "state-1", service: "Google") == "code-1")
     }
 
     @Test func callbackWithAnotherStateIsRejected() {
         let callback = URL(string: "\(Fixture.config.redirectURI)?state=forged&code=code-1")!
-        #expect(throws: GoogleMeetError.stateMismatch) {
-            try GoogleOAuth.code(fromCallback: callback, state: "state-1")
+        #expect(throws: MeetingServiceError.stateMismatch(service: "Google")) {
+            try OAuth.code(fromCallback: callback, state: "state-1", service: "Google")
         }
     }
 
     @Test func declinedConsentCountsAsCancelled() {
         let callback = URL(string: "\(Fixture.config.redirectURI)?state=state-1&error=access_denied")!
-        #expect(throws: GoogleMeetError.signInCancelled) {
-            try GoogleOAuth.code(fromCallback: callback, state: "state-1")
+        #expect(throws: MeetingServiceError.signInCancelled) {
+            try OAuth.code(fromCallback: callback, state: "state-1", service: "Google")
         }
     }
 }
@@ -183,7 +128,7 @@ struct GoogleMeetServiceTests {
         #expect(create.httpMethod == "POST")
         #expect(create.value(forHTTPHeaderField: "Authorization") == "Bearer access-1")
 
-        #expect(store.tokens == GoogleTokens(
+        #expect(store.tokens == OAuthTokens(
             accessToken: "access-1",
             refreshToken: "refresh-1",
             expiresAt: Fixture.now.addingTimeInterval(3599)
@@ -192,7 +137,7 @@ struct GoogleMeetServiceTests {
     }
 
     @Test func aSavedSignInIsReused() async throws {
-        let store = MemoryTokenStore(GoogleTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
+        let store = MemoryTokenStore(OAuthTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
         let transport = StubTransport()
         transport.responses = [(200, Fixture.space)]
         let authorizer = Fixture.approvingAuthorizer()
@@ -206,7 +151,7 @@ struct GoogleMeetServiceTests {
     }
 
     @Test func anExpiredSignInIsRefreshedAndKeepsItsRefreshToken() async throws {
-        let store = MemoryTokenStore(GoogleTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(-5)))
+        let store = MemoryTokenStore(OAuthTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(-5)))
         let transport = StubTransport()
         transport.responses = [(200, Fixture.refreshed), (200, Fixture.space)]
         let authorizer = Fixture.approvingAuthorizer()
@@ -221,11 +166,11 @@ struct GoogleMeetServiceTests {
             "client_id": "1234-abc.apps.googleusercontent.com",
         ])
         #expect(transport.requests[1].value(forHTTPHeaderField: "Authorization") == "Bearer access-2")
-        #expect(store.tokens == GoogleTokens(accessToken: "access-2", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(3599)))
+        #expect(store.tokens == OAuthTokens(accessToken: "access-2", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(3599)))
     }
 
     @Test func aRevokedSignInAsksToSignInAgain() async throws {
-        let store = MemoryTokenStore(GoogleTokens(accessToken: "access-0", refreshToken: "revoked", expiresAt: Fixture.now.addingTimeInterval(-5)))
+        let store = MemoryTokenStore(OAuthTokens(accessToken: "access-0", refreshToken: "revoked", expiresAt: Fixture.now.addingTimeInterval(-5)))
         let transport = StubTransport()
         transport.responses = [(400, #"{"error":"invalid_grant"}"#), (200, Fixture.signedIn), (200, Fixture.space)]
         let authorizer = Fixture.approvingAuthorizer()
@@ -238,7 +183,7 @@ struct GoogleMeetServiceTests {
     }
 
     @Test func accessRemovedAtGoogleAsksToSignInAgain() async throws {
-        let store = MemoryTokenStore(GoogleTokens(accessToken: "removed", refreshToken: "removed", expiresAt: Fixture.now.addingTimeInterval(600)))
+        let store = MemoryTokenStore(OAuthTokens(accessToken: "removed", refreshToken: "removed", expiresAt: Fixture.now.addingTimeInterval(600)))
         let transport = StubTransport()
         transport.responses = [(401, #"{"error":{"status":"UNAUTHENTICATED"}}"#), (200, Fixture.signedIn), (200, Fixture.space)]
         let authorizer = Fixture.approvingAuthorizer()
@@ -255,15 +200,26 @@ struct GoogleMeetServiceTests {
     @Test func cancellingSignInChangesNothing() async {
         let store = MemoryTokenStore()
         let transport = StubTransport()
-        let authorizer = StubAuthorizer { _ in throw GoogleMeetError.signInCancelled }
+        let authorizer = StubAuthorizer { _ in throw MeetingServiceError.signInCancelled }
         let service = Fixture.service(store: store, transport: transport, authorizer: authorizer)
 
-        await #expect(throws: GoogleMeetError.signInCancelled) {
+        await #expect(throws: MeetingServiceError.signInCancelled) {
             try await service.createMeeting()
         }
         #expect(transport.requests.isEmpty)
         #expect(store.tokens == nil)
         #expect(!service.isConnected)
+    }
+
+    @Test func aFailedSignInSheetIsReportedAsAGoogleSignInFailure() async {
+        let authorizer = StubAuthorizer { _ in throw MeetingServiceError.signInSheetFailed(reason: "the sign-in sheet couldn't open") }
+        let service = Fixture.service(authorizer: authorizer)
+
+        await #expect(throws: MeetingServiceError.signInFailed(service: "Google", reason: "the sign-in sheet couldn't open")) {
+            try await service.createMeeting()
+        }
+        #expect(MeetingServiceError.signInFailed(service: "Google", reason: "the sign-in sheet couldn't open").localizedDescription
+            == "Google sign-in failed (the sign-in sheet couldn't open).")
     }
 
     @Test func withoutAClientIDNothingIsSent() async {
@@ -272,7 +228,7 @@ struct GoogleMeetServiceTests {
         let service = Fixture.service(transport: transport, authorizer: authorizer, config: GoogleOAuthConfig(clientID: ""))
 
         #expect(!service.isConfigured)
-        await #expect(throws: GoogleMeetError.notConfigured) {
+        await #expect(throws: MeetingServiceError.notConfigured(service: "Google")) {
             try await service.createMeeting()
         }
         #expect(authorizer.calls.isEmpty)
@@ -280,19 +236,19 @@ struct GoogleMeetServiceTests {
     }
 
     @Test func aRefusedRequestReportsItsStatus() async {
-        let store = MemoryTokenStore(GoogleTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
+        let store = MemoryTokenStore(OAuthTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
         let transport = StubTransport()
         transport.responses = [(403, #"{"error":{"status":"PERMISSION_DENIED"}}"#)]
         let service = Fixture.service(store: store, transport: transport)
 
-        await #expect(throws: GoogleMeetError.requestFailed(status: 403)) {
+        await #expect(throws: MeetingServiceError.requestFailed(service: "Google", status: 403)) {
             try await service.createMeeting()
         }
         #expect(store.tokens != nil) // A refused request isn't a sign-out.
     }
 
     @Test func disconnectRevokesAndForgetsTheSignIn() async {
-        let store = MemoryTokenStore(GoogleTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
+        let store = MemoryTokenStore(OAuthTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
         let transport = StubTransport()
         transport.responses = [(200, "")]
         let service = Fixture.service(store: store, transport: transport)
@@ -306,7 +262,7 @@ struct GoogleMeetServiceTests {
     }
 
     @Test func disconnectForgetsTheSignInEvenOffline() async {
-        let store = MemoryTokenStore(GoogleTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
+        let store = MemoryTokenStore(OAuthTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Fixture.now.addingTimeInterval(600)))
         let transport = StubTransport()
         transport.failure = URLError(.notConnectedToInternet)
         let service = Fixture.service(store: store, transport: transport)
@@ -321,19 +277,25 @@ struct GoogleMeetServiceTests {
 // MARK: - Keychain
 
 @MainActor
-@Suite("Google sign-in Keychain storage")
-struct KeychainGoogleTokenStoreTests {
+@Suite("Sign-in Keychain storage")
+struct KeychainTokenStoreTests {
     @Test func savesLoadsAndClears() throws {
-        let store = KeychainGoogleTokenStore(service: "com.juancasanueva.agenda.tests.\(UUID().uuidString)")
+        let store = KeychainTokenStore(service: "com.juancasanueva.agenda.tests.\(UUID().uuidString)", account: "test", serviceName: "Test")
         defer { store.clear() }
-        let tokens = GoogleTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Date(timeIntervalSince1970: 1_800_000_000))
+        let tokens = OAuthTokens(accessToken: "access-1", refreshToken: "refresh-1", expiresAt: Date(timeIntervalSince1970: 1_800_000_000))
 
         #expect(store.load() == nil)
         try store.save(tokens)
         #expect(store.load() == tokens)
-        try store.save(GoogleTokens(accessToken: "access-2", refreshToken: "refresh-1", expiresAt: tokens.expiresAt))
+        try store.save(OAuthTokens(accessToken: "access-2", refreshToken: "refresh-1", expiresAt: tokens.expiresAt))
         #expect(store.load()?.accessToken == "access-2")
         store.clear()
         #expect(store.load() == nil)
+    }
+
+    @Test func googleKeepsItsExistingKeychainItem() {
+        // Moving to the shared store must not lose the sign-in saved before it.
+        #expect(KeychainTokenStore.google.service == "com.juancasanueva.agenda.google-oauth")
+        #expect(KeychainTokenStore.google.account == "google-meet")
     }
 }

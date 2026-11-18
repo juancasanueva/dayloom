@@ -1,47 +1,57 @@
 import SwiftUI
 
-/// The Google account used to create meetings: whether it's connected, and a way to disconnect it.
+/// The accounts used to create meetings: whether each is connected, and a way to disconnect it.
 struct VideoCallSettingsSection: View {
-    private var meetings = GoogleMeetService.shared
+    var body: some View {
+        PanelSection("Video Calls") {
+            MeetingAccountRow(name: "Google Meet", session: GoogleMeetService.shared.session)
+            Divider()
+            MeetingAccountRow(name: "Zoom", session: ZoomMeetingService.shared.session)
+        }
+    }
+}
+
+private struct MeetingAccountRow: View {
+    let name: String
+    let session: OAuthSession
     @State private var isDisconnecting = false
 
     var body: some View {
-        PanelSection("Video Calls") {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: meetings.isConnected ? "checkmark.circle.fill" : "video.circle")
-                    .font(.title3)
-                    .foregroundStyle(meetings.isConnected ? Color.green : Color.secondary)
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: session.isConnected ? "checkmark.circle.fill" : "video.circle")
+                .font(.title3)
+                .foregroundStyle(session.isConnected ? Color.green : Color.secondary)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Google Meet")
-                        .fontWeight(.medium)
-                    Text(detail)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
-
-                if meetings.isConnected {
-                    Button("Disconnect") {
-                        isDisconnecting = true
-                        Task {
-                            await meetings.disconnect()
-                            isDisconnecting = false
-                        }
-                    }
-                    .disabled(isDisconnecting)
-                    .help("Sign out of Google and forget the sign-in on this Mac")
-                }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name)
+                    .fontWeight(.medium)
+                Text(detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .accessibilityElement(children: .combine)
+
+            Spacer(minLength: 0)
+
+            if session.isConnected {
+                Button("Disconnect") {
+                    isDisconnecting = true
+                    Task {
+                        await session.disconnect()
+                        isDisconnecting = false
+                    }
+                }
+                .disabled(isDisconnecting)
+                .help("Sign out of \(session.serviceName) and forget the sign-in on this Mac")
+            }
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var detail: String {
-        if !meetings.isConfigured { return "Google sign-in isn't set up in this build." }
-        if meetings.isConnected { return "Signed in. New meetings are created with your Google account." }
-        return "Not connected. You'll sign in to Google the first time you create a meeting."
+        let service = session.serviceName
+        if !session.isConfigured { return "\(service) sign-in isn't set up in this build." }
+        if session.isConnected { return "Signed in. New meetings are created with your \(service) account." }
+        return "Not connected. You'll sign in to \(service) the first time you create a meeting."
     }
 }

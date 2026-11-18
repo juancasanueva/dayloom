@@ -1,7 +1,7 @@
 import AppKit
 import AuthenticationServices
 
-/// Shows Google's sign-in page in a system browser sheet over the app's window.
+/// Shows a service's sign-in page in a system browser sheet over the app's window.
 final class WebAuthenticationSessionAuthorizer: NSObject, WebAuthorizer, ASWebAuthenticationPresentationContextProviding {
     /// Held while the sheet is open; the session stops if nothing retains it.
     private var session: ASWebAuthenticationSession?
@@ -22,9 +22,9 @@ final class WebAuthenticationSessionAuthorizer: NSObject, WebAuthorizer, ASWebAu
                 if let callback {
                     result = .success(callback)
                 } else if let error = error as? ASWebAuthenticationSessionError, error.code == .canceledLogin {
-                    result = .failure(GoogleMeetError.signInCancelled)
+                    result = .failure(MeetingServiceError.signInCancelled)
                 } else {
-                    result = .failure(GoogleMeetError.signInFailed(error?.localizedDescription ?? "no reply"))
+                    result = .failure(MeetingServiceError.signInSheetFailed(reason: error?.localizedDescription ?? "no reply"))
                 }
                 // The handler isn't documented to run on the main thread; the state it touches lives there.
                 DispatchQueue.main.async { finish(result) }
@@ -32,7 +32,7 @@ final class WebAuthenticationSessionAuthorizer: NSObject, WebAuthorizer, ASWebAu
             session.presentationContextProvider = self
             self.session = session
             if !session.start() {
-                finish(.failure(GoogleMeetError.signInFailed("the sign-in sheet couldn't open")))
+                finish(.failure(MeetingServiceError.signInSheetFailed(reason: "the sign-in sheet couldn't open")))
             }
         }
     }

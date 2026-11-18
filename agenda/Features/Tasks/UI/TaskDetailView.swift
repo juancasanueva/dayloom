@@ -218,27 +218,17 @@ struct TaskDetailView: View {
         .onChange(of: task.persistentModelID) { meetingError = nil }
     }
 
-    /// Makes a new Google Meet link for the task, signing in to Google the first time.
+    /// Ways to get a meeting link: Google Meet and Zoom create one after a sign-in; Teams opens to make one.
     private var createMeetingButton: some View {
-        let meetings = GoogleMeetService.shared
+        let google = GoogleMeetService.shared
+        let zoom = ZoomMeetingService.shared
 
         return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Button {
-                    createGoogleMeet(with: meetings)
-                } label: {
-                    Label("Create Google Meet", systemImage: "video.badge.plus")
-                }
-                .disabled(!meetings.isConfigured || isCreatingMeeting)
-                .help(meetings.isConfigured ? "Create a new Google Meet link for this task" : "Google sign-in isn't set up in this build.")
-
-                if isCreatingMeeting {
-                    ProgressView().controlSize(.small)
-                } else if !meetings.isConfigured {
-                    Text("Google sign-in isn't set up")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            createRow("Create Google Meet", service: "Google", isConfigured: google.isConfigured) {
+                try await google.createMeeting()
+            }
+            createRow("Create Zoom Meeting", service: "Zoom", isConfigured: zoom.isConfigured) { [task] in
+                try await zoom.createMeeting(topic: task.title, start: task.scheduledStart, duration: task.scheduledDuration)
             }
 
             Button {
@@ -255,23 +245,50 @@ struct TaskDetailView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            if isCreatingMeeting {
+                ProgressView().controlSize(.small)
+            }
         }
         .controlSize(.small)
     }
 
-    private func createGoogleMeet(with meetings: GoogleMeetService) {
+    private func createRow(
+        _ title: String,
+        service: String,
+        isConfigured: Bool,
+        create: @escaping () async throws -> MeetingLink
+    ) -> some View {
+        HStack(spacing: 8) {
+            Button {
+                createMeeting(with: create)
+            } label: {
+                Label(title, systemImage: "video.badge.plus")
+            }
+            .disabled(!isConfigured || isCreatingMeeting)
+            .help(isConfigured ? "Create a new \(service) meeting link for this task" : "\(service) sign-in isn't set up in this build.")
+
+            if !isConfigured {
+                Text("\(service) sign-in isn't set up")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func createMeeting(with create: @escaping () async throws -> MeetingLink) {
         let task = task
         meetingError = nil
         isCreatingMeeting = true
         Task {
             defer { isCreatingMeeting = false }
             do {
-                let meeting = try await meetings.createMeeting()
-                // Another link may have been pasted while Google was answering; keep it.
+                let meeting = try await create()
+                // Another link may have been pasted while the service was answering; keep it.
                 if task.meetingURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     task.meetingURL = meeting.url.absoluteString
                 }
-            } catch GoogleMeetError.signInCancelled {
+            } catch MeetingServiceError.signInCancelled {
                 // Closing the sign-in sheet is a choice, not an error.
             } catch {
                 meetingError = error.localizedDescription
