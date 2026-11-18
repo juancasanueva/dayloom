@@ -20,13 +20,17 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 ### S3 — Create meetings (phase 2, waits on provider app registration)
 - S3.1 From a task, create a new Google Meet, Zoom, or Teams meeting and store its link on the task.
 - S3.2 Each service needs the user's sign-in (OAuth); tokens live in the Keychain, never in the synced store.
+- S3.3 Google Meet (T2): a "Create Google Meet" button in the task's Video Call section, shown while the task has no link, creates a Meet space (Meet REST API `spaces.create`, scope `meetings.space.created` only, no calendar event) and stores its link on the task.
+- S3.4 The first time, the user signs in to Google in a system browser sheet (OAuth with PKCE, no client secret); later meetings reuse or refresh the saved sign-in. Cancelling sign-in changes nothing and shows no error.
+- S3.5 Settings shows whether Google is connected and offers Disconnect, which revokes the sign-in and forgets it.
+- S3.6 Until a Google OAuth client ID is set in the build, the button explains that Google sign-in isn't set up (assumption: the client ID is a public identifier kept in source, as Google documents for native apps).
 
 ## Tasks
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
 | T1 | S1.1–S1.3, S2.1–S2.3 | inline | done (260 tests green; app opened on existing data) | a75190d |
-| T2 | S3.1–S3.2 Google Meet | inline | blocked: needs a Google Cloud OAuth client | |
+| T2 | S3.1–S3.6 Google Meet | inline | done (278 tests green, independent verifier: no blockers); live use waits on the user's client ID | 6353854 |
 | T3 | S3.1–S3.2 Zoom | inline | blocked: needs a Zoom OAuth app | |
 | T4 | S3.1–S3.2 Teams | inline | blocked: needs an Azure app registration and account type | |
 
@@ -36,3 +40,5 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 - L2 (2026-11-18) User, asked whether creating meetings is needed or pasting a link is enough: "I want both"
 - L3 Plan: T1 (joining) first, it has no outside dependencies; T2–T4 wait on provider credentials only the user can register.
 - L4 T1 done in a75190d: RED observed (missing types, then a mailto link accepted), GREEN with 260 tests; the app opened on the existing store with the new field.
+- L5 (2026-11-18) User: "start with google meet"
+- L6 T2 done in 6353854: RED observed (missing types; then the 401 case), GREEN with 278 tests. Risk item 2 (auth, credentials): independent verifier found no blockers and met S3.3–S3.6; fixed its advisories on a 401 after access removal, a possible double resume of the sign-in sheet, whitespace-only link fields, and a visible not-set-up hint. Next: the user creates the Google Cloud OAuth client (iOS type, bundle ID com.juancasanueva.agenda) and sends the client ID for GoogleOAuthConfig.app.
