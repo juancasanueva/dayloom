@@ -18,13 +18,16 @@ final class WebAuthenticationSessionAuthorizer: NSObject, WebAuthorizer, ASWebAu
             }
 
             let session = ASWebAuthenticationSession(url: url, callback: .customScheme(callbackScheme)) { callback, error in
+                let result: Result<URL, Error>
                 if let callback {
-                    finish(.success(callback))
+                    result = .success(callback)
                 } else if let error = error as? ASWebAuthenticationSessionError, error.code == .canceledLogin {
-                    finish(.failure(GoogleMeetError.signInCancelled))
+                    result = .failure(GoogleMeetError.signInCancelled)
                 } else {
-                    finish(.failure(GoogleMeetError.signInFailed(error?.localizedDescription ?? "no reply")))
+                    result = .failure(GoogleMeetError.signInFailed(error?.localizedDescription ?? "no reply"))
                 }
+                // The handler isn't documented to run on the main thread; the state it touches lives there.
+                DispatchQueue.main.async { finish(result) }
             }
             session.presentationContextProvider = self
             self.session = session
