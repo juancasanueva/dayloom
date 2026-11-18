@@ -85,6 +85,10 @@ private struct PlannerCommands: Commands {
     let appState: AppState
 
     var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About Dayloom") { AboutCredits.showAboutPanel() }
+        }
+
         CommandGroup(replacing: .newItem) {
             Button("New Task") { appState.requestQuickAdd() }
                 .keyboardShortcut("n")
