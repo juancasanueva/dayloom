@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -19,39 +20,24 @@ struct SidebarView: View {
 
         List(selection: $appState.selection) {
             Section {
-                Label("Calendar", systemImage: "calendar")
-                    .tag(SidebarSelection.calendar)
-                Label("Habits", systemImage: "flame")
-                    .tag(SidebarSelection.habits)
-                Label("Notes", systemImage: "note.text")
-                    .tag(SidebarSelection.notes)
+                row("Calendar", systemImage: "calendar", for: .calendar)
+                row("Habits", systemImage: "flame", for: .habits)
+                row("Notes", systemImage: "note.text", for: .notes)
             }
 
             Section {
-                Label("Inbox", systemImage: "tray")
-                    .badge(query.tasks(from: allTasks, in: .inbox).count)
-                    .tag(SidebarSelection.tasks(.inbox))
-                Label("Today", systemImage: "sun.max")
-                    .badge(query.tasks(from: allTasks, in: .today).count)
-                    .tag(SidebarSelection.tasks(.today))
-                Label("Upcoming", systemImage: "calendar.badge.clock")
-                    .tag(SidebarSelection.tasks(.upcoming))
-                Label("Completed", systemImage: "checkmark.circle")
-                    .tag(SidebarSelection.tasks(.completed))
+                row("Inbox", systemImage: "tray", for: .tasks(.inbox), count: query.tasks(from: allTasks, in: .inbox).count)
+                row("Today", systemImage: "sun.max", for: .tasks(.today), count: query.tasks(from: allTasks, in: .today).count)
+                row("Upcoming", systemImage: "calendar.badge.clock", for: .tasks(.upcoming))
+                row("Completed", systemImage: "checkmark.circle", for: .tasks(.completed))
             } header: {
                 SidebarHeader("Tasks")
             }
 
             Section {
                 ForEach(tags) { tag in
-                    Label {
-                        Text(tag.name)
-                    } icon: {
-                        Image(systemName: "number")
-                            .foregroundStyle(appearsActive ? AnyShapeStyle(tag.color.color) : AnyShapeStyle(.secondary))
-                    }
-                    .tag(SidebarSelection.tasks(.tag(tag.persistentModelID)))
-                    .contextMenu { tagMenu(tag) }
+                    row(tag.name, systemImage: "number", for: .tasks(.tag(tag.persistentModelID)), iconColor: tag.color.color)
+                        .contextMenu { tagMenu(tag) }
                 }
                 newTagButton
             } header: {
@@ -84,6 +70,13 @@ struct SidebarView: View {
         .sheet(item: $tagBeingRenamed) { tag in
             TagNameSheet(title: "Rename Tag", actionTitle: "Rename", name: $renameText) { rename(tag) }
         }
+    }
+
+    private func row(
+        _ title: String, systemImage: String, for selection: SidebarSelection, count: Int = 0, iconColor: Color? = nil
+    ) -> some View {
+        SidebarRow(title: title, systemImage: systemImage, iconColor: iconColor, count: count, isSelected: appState.selection == selection)
+            .tag(selection)
     }
 
     /// Sits under the tags as an outlined row, so it reads as an action rather than a tag.
@@ -147,6 +140,75 @@ struct SidebarView: View {
             appState.selection = .tasks(.today)
         }
         modelContext.delete(tag)
+    }
+}
+
+/// A sidebar row in the theme's accent. The system draws its selection and icons in the
+/// System Settings accent whatever the theme, so its highlight is turned off and drawn here.
+private struct SidebarRow: View {
+    let title: String
+    let systemImage: String
+    /// The icon's color when the row isn't highlighted; the theme's accent when `nil`.
+    let iconColor: Color?
+    /// Shown at the trailing edge when above zero, like a badge.
+    let count: Int
+    let isSelected: Bool
+
+    @Environment(\.appearsActive) private var appearsActive
+
+    /// Like the system's, the highlight turns gray while the window is in the background.
+    private var isHighlighted: Bool { isSelected && appearsActive }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Label {
+                Text(title)
+                    .foregroundStyle(isHighlighted ? Theme.onAccent : .primary)
+            } icon: {
+                Image(systemName: systemImage)
+                    .foregroundStyle(iconStyle)
+            }
+            Spacer(minLength: 0)
+            if count > 0 {
+                Text(count, format: .number)
+                    .font(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(isHighlighted ? AnyShapeStyle(Theme.onAccent.opacity(0.8)) : AnyShapeStyle(.secondary))
+            }
+        }
+        // The sidebar ignores row backgrounds, so the highlight reaches past the row's insets instead.
+        .background {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isHighlighted ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(isSelected ? Theme.hairline : Color.clear))
+                .padding(.horizontal, -8)
+                .padding(.vertical, -4)
+        }
+        .background(SystemSelectionHidden())
+    }
+
+    private var iconStyle: AnyShapeStyle {
+        if isHighlighted { return AnyShapeStyle(Theme.onAccent) }
+        guard appearsActive else { return AnyShapeStyle(.secondary) }
+        return AnyShapeStyle(iconColor ?? Theme.accent)
+    }
+}
+
+/// Turns off the selection highlight of the table a row sits in, so the row can draw its own.
+private struct SystemSelectionHidden: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { Probe() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    private final class Probe: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            var view = superview
+            while let current = view, !(current is NSTableView) {
+                view = current.superview
+            }
+            if let table = view as? NSTableView, table.selectionHighlightStyle != .none {
+                table.selectionHighlightStyle = .none
+            }
+        }
     }
 }
 

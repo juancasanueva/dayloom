@@ -112,4 +112,16 @@ struct ThemeStoreTests {
     func appearanceMapsToTheWindowAppearance(mode: AppearanceMode, expected: String?) {
         #expect(mode.appearanceName?.rawValue == expected)
     }
+
+    @Test(arguments: [
+        (0xF0A35E as UInt32, true),  // Ember orange
+        (0xC4A7E7, true),            // Rosé Pine purple
+        (0x8FC28A, true),            // Moss green
+        (0x2F6FEB, false),           // Paper blue
+        (0xAF3A03, false),           // Gruvbox Light orange
+        (0x3E8A5B, false),           // Sage green
+    ])
+    func selectedRowTextContrastsWithTheAccent(accent: UInt32, prefersDark: Bool) {
+        #expect(Theme.prefersDarkText(on: Theme.nsColor(accent)) == prefersDark)
+    }
 }

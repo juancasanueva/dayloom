@@ -27,6 +27,30 @@ enum Theme {
             return hex.map(nsColor) ?? .controlAccentColor
         })
     }
+    /// Text and icons drawn on the accent, like a selected sidebar row: dark on light accents.
+    static var onAccent: Color {
+        let store = ThemeStore.shared
+        let dark = store.darkPalette.accent, light = store.lightPalette.accent
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            let hex = isDark(appearance) ? dark : light
+            let accent = hex.map(nsColor) ?? .controlAccentColor
+            return prefersDarkText(on: accent) ? NSColor.black.withAlphaComponent(0.85) : .white
+        })
+    }
+
+    /// Whether dark text reads clearly better than white on `color`, by WCAG contrast.
+    /// White wins near a tie, as on the Mac's own selected rows.
+    static func prefersDarkText(on color: NSColor) -> Bool {
+        guard let rgb = color.usingColorSpace(.sRGB) else { return false }
+        func linear(_ channel: CGFloat) -> CGFloat {
+            channel <= 0.04045 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
+        }
+        let luminance = 0.2126 * linear(rgb.redComponent) + 0.7152 * linear(rgb.greenComponent) + 0.0722 * linear(rgb.blueComponent)
+        let contrastWithBlack = (luminance + 0.05) / 0.05
+        let contrastWithWhite = 1.05 / (luminance + 0.05)
+        return contrastWithBlack > contrastWithWhite * 1.5
+    }
+
     /// Hairlines and quiet strokes.
     static let hairline = Color.primary.opacity(0.08)
 
