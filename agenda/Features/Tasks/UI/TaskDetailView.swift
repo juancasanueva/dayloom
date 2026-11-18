@@ -39,6 +39,8 @@ struct TaskDetailView: View {
 
     @State private var newSubtaskTitle = ""
     @State private var isConfirmingDelete = false
+    @State private var isCreatingMeeting = false
+    @State private var meetingError: String?
 
     private static let durations: [TimeInterval] = [15, 30, 45, 60, 90, 120, 180, 240].map { $0 * 60 }
 
@@ -201,6 +203,60 @@ struct TaskDetailView: View {
                 Label("Not a web link", systemImage: "exclamationmark.triangle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } else {
+                createMeetingButton
+            }
+
+            if let meetingError {
+                Text(meetingError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .onChange(of: task.persistentModelID) { meetingError = nil }
+    }
+
+    /// Makes a new Google Meet link for the task, signing in to Google the first time.
+    private var createMeetingButton: some View {
+        let meetings = GoogleMeetService.shared
+
+        return HStack(spacing: 8) {
+            Button {
+                createGoogleMeet(with: meetings)
+            } label: {
+                Label("Create Google Meet", systemImage: "video.badge.plus")
+            }
+            .controlSize(.small)
+            .disabled(!meetings.isConfigured || isCreatingMeeting)
+            .help(meetings.isConfigured ? "Create a new Google Meet link for this task" : "Google sign-in isn't set up in this build.")
+
+            if isCreatingMeeting {
+                ProgressView().controlSize(.small)
+            } else if !meetings.isConfigured {
+                Text("Google sign-in isn't set up")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func createGoogleMeet(with meetings: GoogleMeetService) {
+        let task = task
+        meetingError = nil
+        isCreatingMeeting = true
+        Task {
+            defer { isCreatingMeeting = false }
+            do {
+                let meeting = try await meetings.createMeeting()
+                // Another link may have been pasted while Google was answering; keep it.
+                if task.meetingURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    task.meetingURL = meeting.url.absoluteString
+                }
+            } catch GoogleMeetError.signInCancelled {
+                // Closing the sign-in sheet is a choice, not an error.
+            } catch {
+                meetingError = error.localizedDescription
             }
         }
     }

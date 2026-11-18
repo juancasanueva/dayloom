@@ -30,6 +30,8 @@ struct SettingsView: View {
 
             ReminderSettingsSection()
 
+            VideoCallSettingsSection()
+
             PanelSection("iCloud") {
                 HStack(alignment: .top, spacing: 12) {
                     statusIcon
