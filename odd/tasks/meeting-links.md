@@ -24,6 +24,8 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 - S3.4 The first time, the user signs in to Google in a system browser sheet (OAuth with PKCE, no client secret); later meetings reuse or refresh the saved sign-in. Cancelling sign-in changes nothing and shows no error.
 - S3.5 Settings shows whether Google is connected and offers Disconnect, which revokes the sign-in and forgets it.
 - S3.7 Teams (T4): Microsoft Graph creates Teams meetings only for work or school accounts; the user's account is personal. So "New Teams Meeting" opens Teams (the desktop app when installed, otherwise https://teams.live.com), where the user creates a meeting link and pastes it into the task; no Microsoft sign-in in the app.
+- S3.8 Zoom (T3): "Create Zoom Meeting" in the task's Video Call section signs in to Zoom (public-client OAuth with PKCE, no client secret, redirect `dayloom://oauth/zoom`) and creates a meeting with `POST /v2/users/me/meetings`: the task's title as topic; its scheduled start and duration when it has one (type 2), otherwise a meeting with no fixed time (type 3). The join link is stored on the task. Settings shows Zoom's connection with Disconnect, like Google (S3.5). Assumption: Zoom accepts the custom-scheme redirect; otherwise a loopback redirect replaces it.
+- S3.9 The Google and Zoom sign-ins share one OAuth implementation; Google's existing behavior and saved sign-in are unchanged.
 - S3.6 Until a Google OAuth client ID is set in the build, the button explains that Google sign-in isn't set up (assumption: the client ID is a public identifier kept in source, as Google documents for native apps).
 
 ## Tasks
@@ -32,7 +34,7 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 |----|-------|-------|--------|--------|
 | T1 | S1.1–S1.3, S2.1–S2.3 | inline | done (260 tests green; app opened on existing data) | a75190d |
 | T2 | S3.1–S3.6 Google Meet | inline | done (278 tests green, independent verifier: no blockers); live use waits on the user's client ID | 6353854 |
-| T3 | S3.1–S3.2 Zoom | inline | blocked: needs a Zoom OAuth app | |
+| T3 | S3.8–S3.9 Zoom | inline | done in code (295 tests green, independent verifier: no blockers); live use waits on the user's Zoom client ID and redirect acceptance | 96f2ae3 |
 | T4 | S3.7 Teams (open Teams, paste link) | inline | done (285 tests green) | b1bdd99 |
 
 ## Log
@@ -46,3 +48,5 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 - L7 Native review (lenses risk, resilience, reliability) of b8be2e0..6353854: granted by the user, approved and acknowledged; 6 non-blocking follow-ups: sign-in sheet callback thread, `host:port` pastes, Keychain test uses the real Keychain, per-task create state, zoomgov app link host, one link detector per event.
 - L8 (2026-11-18) Live check by the user: Google sign-in first failed with "Error 403: access_denied" (account not yet a test user); after adding it under Audience → Test users, Create Google Meet returned https://meet.google.com/tou-jwvw-cmw and Join Google Meet appeared. User: "it worked. It gave me a link". T2 verified live. Next: T3 Zoom, T4 Teams.
 - L9 (2026-11-18) User: "go, lets do Teams now". Graph docs: creating online meetings is "Not supported" for personal Microsoft accounts. User, asked which account: "a personal one". Fallback chosen: open Teams and paste the link (S3.7).
+- L10 (2026-11-18) User, asked whether to do Zoom next: "yes". Zoom docs: public-client PKCE needs no secret; custom-scheme redirects unconfirmed (examples use loopback).
+- L11 T3 in 96f2ae3: RED observed (missing shared OAuth and Zoom types), GREEN with 295 tests. Risk item 2 (shared sign-in code): independent verifier found no blockers, Google unchanged (requests, refresh, Keychain item); fixed its wording advisory (service-named sign-in and Keychain errors, pinned by a test) and restored the Teams button's always-enabled state. Open: whether Zoom accepts the custom-scheme redirect and public-client refresh/revoke without Basic auth.
