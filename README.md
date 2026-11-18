@@ -1,4 +1,4 @@
-# Dayloom
+<h1><img src="agenda/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" alt="" width="64" align="absmiddle"> Dayloom</h1>
 
 A native macOS planner that keeps your tasks, calendar, habits and notes in one window, synced across your Macs through iCloud.
 
