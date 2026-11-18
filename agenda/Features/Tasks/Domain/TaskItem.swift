@@ -61,6 +61,8 @@ final class TaskItem {
     var completedAt: Date?
     var sortIndex: Double = 0
     var repeatRuleRaw: String = RepeatRule.none.rawValue
+    /// The video-call link; empty when the task isn't a call.
+    var meetingURL: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \TaskItem.parent)
     var subtasks: [TaskItem]? = []
@@ -108,6 +110,9 @@ final class TaskItem {
 
     var isDone: Bool { status == .done }
 
+    /// The video call this task is, when its meeting link is a web link.
+    var meetingLink: MeetingLink? { MeetingLink(meetingURL) }
+
     var scheduledEnd: Date? {
         scheduledStart.map { $0.addingTimeInterval(scheduledDuration) }
     }
@@ -154,6 +159,7 @@ final class TaskItem {
             createdAt: createdAt
         )
         next.notes = notes
+        next.meetingURL = meetingURL
         next.scheduledDuration = scheduledDuration
         next.repeatRule = rule
         modelContext.insert(next)

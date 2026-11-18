@@ -24,6 +24,8 @@ struct CalendarEntry: Identifiable, Hashable {
     var calendarName: String? = nil
     var location: String? = nil
     var url: URL? = nil
+    /// The video call to join, for tasks with a meeting link and events that mention one.
+    var meetingLink: MeetingLink? = nil
 
     var taskID: PersistentIdentifier? {
         if case .task(let id, _) = kind { return id }
@@ -47,7 +49,8 @@ struct CalendarEntry: Identifiable, Hashable {
                 end: end,
                 isAllDay: false,
                 kind: .task(task.persistentModelID, isDone: task.isDone),
-                tint: .accent
+                tint: .accent,
+                meetingLink: task.meetingLink
             )
         }
     }

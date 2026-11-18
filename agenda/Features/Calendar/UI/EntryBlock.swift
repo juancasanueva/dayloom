@@ -30,6 +30,10 @@ struct EntryBlock: View {
                     .font(.caption.weight(.semibold))
                     .strikethrough(entry.isCompletedTask)
                     .lineLimit(2)
+                if let meeting = entry.meetingLink {
+                    Spacer(minLength: 0)
+                    JoinMeetingIconButton(meeting: meeting, tint: tint)
+                }
             }
             if showsTime {
                 Text(entry.start, format: .dateTime.hour().minute())
@@ -77,6 +81,11 @@ struct EntryBlock: View {
         .help(entry.title)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityActions {
+            if let meeting = entry.meetingLink {
+                Button(meeting.joinTitle) { MeetingLauncher.join(meeting) }
+            }
+        }
     }
 }
 
@@ -100,7 +109,12 @@ private struct EventDetails: View {
             if let location = entry.location, !location.isEmpty {
                 Label(location, systemImage: "mappin.and.ellipse")
             }
-            if let url = entry.url {
+            if let meeting = entry.meetingLink {
+                JoinMeetingButton(meeting: meeting)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            }
+            if let url = entry.url, url != entry.meetingLink?.url {
                 Link(destination: url) {
                     Label("Open Link", systemImage: "link")
                 }

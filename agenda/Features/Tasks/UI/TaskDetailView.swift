@@ -50,6 +50,7 @@ struct TaskDetailView: View {
 
                 if task.parent == nil {
                     datesSection
+                    meetingSection
                 }
 
                 tagsSection
@@ -180,6 +181,26 @@ struct TaskDetailView: View {
                     .labelsHidden()
                     .textFieldStyle(.plain)
                     .onSubmit(addSubtask)
+            }
+        }
+    }
+
+    /// A link makes the task a video call; the service is recognized from it.
+    private var meetingSection: some View {
+        PanelSection("Video Call") {
+            TextField("Meeting link", text: $task.meetingURL, prompt: Text("Paste a Google Meet, Zoom or Teams link"))
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+                .accessibilityLabel("Meeting link")
+
+            if let meeting = task.meetingLink {
+                JoinMeetingButton(meeting: meeting)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            } else if !task.meetingURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Label("Not a web link", systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }

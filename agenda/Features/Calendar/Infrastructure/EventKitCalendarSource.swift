@@ -33,7 +33,8 @@ final class EventKitCalendarSource: CalendarEventSource {
                 tint: Self.tint(for: event.calendar),
                 calendarName: event.calendar?.title,
                 location: event.location,
-                url: event.url
+                url: event.url,
+                meetingLink: MeetingLink.find(in: [event.url?.absoluteString, event.location, event.notes])
             )
         }
     }
