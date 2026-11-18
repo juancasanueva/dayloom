@@ -10,7 +10,8 @@ struct TaskListView: View {
     @Query(sort: \TaskItem.createdAt) private var allTasks: [TaskItem]
     @Query(sort: \Tag.name) private var tags: [Tag]
 
-    @AppStorage(TaskLayout.storageKey) private var layout: TaskLayout = .list
+    /// Each list remembers whether it shows the list or the board.
+    private var layouts = TaskLayoutStore.shared
     @State private var newTitle = ""
     @FocusState private var isQuickAddFocused: Bool
     @FocusState private var isListFocused: Bool
@@ -18,7 +19,11 @@ struct TaskListView: View {
     private var query: TaskQuery { TaskQuery() }
 
     /// Completed has no statuses to arrange, so it always shows the list.
-    private var showsBoard: Bool { scope != .completed && layout == .board }
+    private var showsBoard: Bool { layouts.layout(for: scope) == .board }
+
+    private var layout: Binding<TaskLayout> {
+        Binding(get: { layouts.layout(for: scope) }, set: { layouts.setLayout($0, for: scope) })
+    }
 
     private var scopeTag: Tag? {
         guard case .tag(let id) = scope else { return nil }
@@ -171,7 +176,7 @@ struct TaskListView: View {
     }
 
     private var layoutPicker: some View {
-        Picker("Layout", selection: $layout) {
+        Picker("Layout", selection: layout) {
             ForEach(TaskLayout.allCases) { layout in
                 Label(layout.title, systemImage: layout.systemImage)
                     .labelStyle(.iconOnly)
