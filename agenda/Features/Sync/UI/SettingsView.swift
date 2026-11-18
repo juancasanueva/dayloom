@@ -2,46 +2,114 @@ import CloudKit
 import SwiftUI
 
 /// The app's Settings window: one tab per area, each sized to its own content.
+///
+/// The tab bar is drawn here rather than by `TabView`, whose toolbar tabs always use the
+/// System Settings accent instead of the theme's.
 struct SettingsView: View {
-    enum Tab: String {
+    enum Tab: String, CaseIterable, Identifiable {
         case appearance, shortcuts, notifications, videoCalls, iCloud
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .appearance: "Appearance"
+            case .shortcuts: "Shortcuts"
+            case .notifications: "Notifications"
+            case .videoCalls: "Video Calls"
+            case .iCloud: "iCloud"
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .appearance: "paintbrush"
+            case .shortcuts: "keyboard"
+            case .notifications: "bell"
+            case .videoCalls: "video"
+            case .iCloud: "icloud"
+            }
+        }
     }
 
     /// Settings reopens on the tab used last.
     @AppStorage("settingsTab") private var selection: Tab = .appearance
 
     var body: some View {
-        TabView(selection: $selection) {
-            page { ThemeSettingsSection() }
-                .tabItem { Label("Appearance", systemImage: "paintbrush") }
-                .tag(Tab.appearance)
-
-            page { ShortcutSettingsSection() }
-                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
-                .tag(Tab.shortcuts)
-
-            page { ReminderSettingsSection() }
-                .tabItem { Label("Notifications", systemImage: "bell") }
-                .tag(Tab.notifications)
-
-            page { VideoCallSettingsSection() }
-                .tabItem { Label("Video Calls", systemImage: "video") }
-                .tag(Tab.videoCalls)
-
-            page { SyncSettingsSection() }
-                .tabItem { Label("iCloud", systemImage: "icloud") }
-                .tag(Tab.iCloud)
+        VStack(spacing: 0) {
+            HStack(spacing: 4) {
+                ForEach(Tab.allCases) { tab in
+                    SettingsTabButton(tab: tab, isSelected: tab == selection) { selection = tab }
+                }
+            }
+            .padding(.top, 4)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity)
+            Divider()
+            page
         }
+        .navigationTitle(selection.title)
         .containerBackground(Theme.panel, for: .window)
         .themedAppearance()
     }
 
-    /// A tab's content at a fixed width; its height follows the content, so the window does too.
-    private func page<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        content()
-            .padding(24)
-            .frame(width: 600, alignment: .topLeading)
-            .fixedSize(horizontal: false, vertical: true)
+    /// The selected tab's content at a fixed width; its height follows the content, so the window does too.
+    private var page: some View {
+        Group {
+            switch selection {
+            case .appearance: ThemeSettingsSection()
+            case .shortcuts: ShortcutSettingsSection()
+            case .notifications: ReminderSettingsSection()
+            case .videoCalls: VideoCallSettingsSection()
+            case .iCloud: SyncSettingsSection()
+            }
+        }
+        .padding(24)
+        .frame(width: 600, alignment: .topLeading)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// One tab of the Settings bar, shaped like the system's: the selected tab in the theme's accent.
+private struct SettingsTabButton: View {
+    let tab: SettingsView.Tab
+    let isSelected: Bool
+    let select: () -> Void
+
+    @Environment(\.appearsActive) private var appearsActive
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: select) {
+            VStack(spacing: 3) {
+                Image(systemName: tab.symbol)
+                    .font(.system(size: 17))
+                    .frame(height: 22)
+                Text(tab.title)
+                    .font(.caption)
+            }
+            .frame(minWidth: 62)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 5)
+            .foregroundStyle(foreground)
+            .background(background, in: RoundedRectangle(cornerRadius: 6))
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        // The focus ring is drawn in the system accent; the selected tab already shows where you are.
+        .focusEffectDisabled()
+        .onHover { isHovered = $0 }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var foreground: AnyShapeStyle {
+        guard isSelected else { return AnyShapeStyle(.secondary) }
+        return appearsActive ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.primary)
+    }
+
+    private var background: Color {
+        if isSelected { return Color.primary.opacity(0.1) }
+        return isHovered ? Theme.hairline : .clear
     }
 }
 
