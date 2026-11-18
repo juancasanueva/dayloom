@@ -4,7 +4,7 @@ import Foundation
 /// The app's Google sign-in client. Native-app client IDs are public identifiers, not secrets.
 struct GoogleOAuthConfig: Equatable {
     /// Set to the "iOS" OAuth client ID from Google Cloud Console, such as `1234-abc.apps.googleusercontent.com`.
-    static let app = GoogleOAuthConfig(clientID: "")
+    static let app = GoogleOAuthConfig(clientID: "404557996424-cv2htro98ambvmjn7mn8jeejhtskrpdd.apps.googleusercontent.com")
 
     /// Only lets the app create meetings; it can't read the user's calendar, mail or other meetings.
     static let scope = "https://www.googleapis.com/auth/meetings.space.created"
