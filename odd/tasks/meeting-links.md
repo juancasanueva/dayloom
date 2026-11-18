@@ -25,7 +25,7 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
-| T1 | S1.1–S1.3, S2.1–S2.3 | inline | in progress | |
+| T1 | S1.1–S1.3, S2.1–S2.3 | inline | done (260 tests green; app opened on existing data) | a75190d |
 | T2 | S3.1–S3.2 Google Meet | inline | blocked: needs a Google Cloud OAuth client | |
 | T3 | S3.1–S3.2 Zoom | inline | blocked: needs a Zoom OAuth app | |
 | T4 | S3.1–S3.2 Teams | inline | blocked: needs an Azure app registration and account type | |
@@ -35,3 +35,4 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 - L1 (2026-11-18) User: "For I given task, I want to be able to indicate that its a video call, and for those, be able to join a meeting using GoogleMeet, Teams, Zoom, etc. Is that possible to implement?"
 - L2 (2026-11-18) User, asked whether creating meetings is needed or pasting a link is enough: "I want both"
 - L3 Plan: T1 (joining) first, it has no outside dependencies; T2–T4 wait on provider credentials only the user can register.
+- L4 T1 done in a75190d: RED observed (missing types, then a mailto link accepted), GREEN with 260 tests; the app opened on the existing store with the new field.
