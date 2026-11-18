@@ -25,8 +25,21 @@ final class WeekCalendarModel {
         self.access = source.access
     }
 
-    var days: [Date] { scope == .week ? week.days(containing: anchor) : month.days(containing: anchor) }
-    var interval: DateInterval { scope == .week ? week.interval(containing: anchor) : month.interval(containing: anchor) }
+    var days: [Date] {
+        switch scope {
+        case .day: [week.calendar.startOfDay(for: anchor)]
+        case .week: week.days(containing: anchor)
+        case .month: month.days(containing: anchor)
+        }
+    }
+
+    var interval: DateInterval {
+        switch scope {
+        case .day: week.dayInterval(containing: anchor)
+        case .week: week.interval(containing: anchor)
+        case .month: month.interval(containing: anchor)
+        }
+    }
 
     func reload() {
         access = source.access
@@ -56,15 +69,21 @@ final class WeekCalendarModel {
     func showNextWeek() { move(byWeeks: 1) }
     func showPreviousWeek() { move(byWeeks: -1) }
 
-    /// The next week or month, depending on the scope.
-    func showNext() { scope == .week ? move(byWeeks: 1) : move(byMonths: 1) }
-    /// The previous week or month, depending on the scope.
-    func showPrevious() { scope == .week ? move(byWeeks: -1) : move(byMonths: -1) }
+    /// The next day, week, or month, depending on the scope.
+    func showNext() { move(by: 1) }
+    /// The previous day, week, or month, depending on the scope.
+    func showPrevious() { move(by: -1) }
 
     /// Switches to the week holding `day`.
     func showWeek(of day: Date) {
         anchor = day
         if scope == .week { reload() } else { scope = .week }
+    }
+
+    /// Switches to `day` on its own.
+    func showDay(_ day: Date) {
+        anchor = day
+        if scope == .day { reload() } else { scope = .day }
     }
 
     func showToday(_ now: Date = .now) {
@@ -84,8 +103,13 @@ final class WeekCalendarModel {
         reload()
     }
 
-    private func move(byMonths months: Int) {
-        anchor = month.shift(anchor, byMonths: months)
+    /// Moves one step of the current scope forward or back.
+    private func move(by steps: Int) {
+        switch scope {
+        case .day: anchor = week.shift(anchor, byDays: steps)
+        case .week: anchor = week.shift(anchor, byWeeks: steps)
+        case .month: anchor = month.shift(anchor, byMonths: steps)
+        }
         reload()
     }
 }

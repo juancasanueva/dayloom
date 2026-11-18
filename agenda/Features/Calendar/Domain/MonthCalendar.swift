@@ -1,12 +1,20 @@
 import Foundation
 
-/// Whether the calendar shows one week or a whole month.
+/// Whether the calendar shows one day, one week, or a whole month.
 enum CalendarScope: String, CaseIterable, Identifiable {
+    case day
     case week
     case month
 
     var id: String { rawValue }
-    var title: String { self == .week ? "Week" : "Month" }
+
+    var title: String {
+        switch self {
+        case .day: "Day"
+        case .week: "Week"
+        case .month: "Month"
+        }
+    }
 }
 
 /// Month grid rules: whole weeks covering the month, and what each day holds.
