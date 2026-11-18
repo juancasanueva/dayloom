@@ -41,6 +41,7 @@ struct TaskDetailView: View {
     @State private var isConfirmingDelete = false
     @State private var isCreatingMeeting = false
     @State private var meetingError: String?
+    @State private var showsTeamsHint = false
 
     private static let durations: [TimeInterval] = [15, 30, 45, 60, 90, 120, 180, 240].map { $0 * 60 }
 
@@ -221,24 +222,41 @@ struct TaskDetailView: View {
     private var createMeetingButton: some View {
         let meetings = GoogleMeetService.shared
 
-        return HStack(spacing: 8) {
-            Button {
-                createGoogleMeet(with: meetings)
-            } label: {
-                Label("Create Google Meet", systemImage: "video.badge.plus")
-            }
-            .controlSize(.small)
-            .disabled(!meetings.isConfigured || isCreatingMeeting)
-            .help(meetings.isConfigured ? "Create a new Google Meet link for this task" : "Google sign-in isn't set up in this build.")
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Button {
+                    createGoogleMeet(with: meetings)
+                } label: {
+                    Label("Create Google Meet", systemImage: "video.badge.plus")
+                }
+                .disabled(!meetings.isConfigured || isCreatingMeeting)
+                .help(meetings.isConfigured ? "Create a new Google Meet link for this task" : "Google sign-in isn't set up in this build.")
 
-            if isCreatingMeeting {
-                ProgressView().controlSize(.small)
-            } else if !meetings.isConfigured {
-                Text("Google sign-in isn't set up")
+                if isCreatingMeeting {
+                    ProgressView().controlSize(.small)
+                } else if !meetings.isConfigured {
+                    Text("Google sign-in isn't set up")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Button {
+                TeamsMeetingStarter.open()
+                showsTeamsHint = true
+            } label: {
+                Label("New Teams Meeting", systemImage: "arrow.up.forward.app")
+            }
+            .help("Opens Teams, where you create a meeting link to paste here")
+
+            if showsTeamsHint {
+                Text("In Teams, choose Meet, then Create a meeting link. Copy it and paste it above.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .controlSize(.small)
     }
 
     private func createGoogleMeet(with meetings: GoogleMeetService) {

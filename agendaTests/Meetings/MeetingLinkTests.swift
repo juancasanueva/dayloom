@@ -114,3 +114,20 @@ struct TaskMeetingTests {
         #expect(entries.map(\.meetingLink?.provider) == [.zoom])
     }
 }
+
+@Suite("New Teams meeting")
+struct TeamsMeetingStarterTests {
+    @Test func opensTheTeamsAppWhenItIsInstalled() {
+        #expect(TeamsMeetingStarter.destination(appInstalled: true).absoluteString == "msteams:")
+    }
+
+    @Test func opensTeamsOnTheWebOtherwise() {
+        #expect(TeamsMeetingStarter.destination(appInstalled: false).absoluteString == "https://teams.live.com/")
+    }
+
+    @Test func aPastedTeamsLinkIsAJoinableTeamsMeeting() throws {
+        let meeting = try #require(MeetingLink("https://teams.live.com/meet/9312345678901?p=AbCdEf"))
+        #expect(meeting.provider == .teams)
+        #expect(meeting.joinTitle == "Join Teams")
+    }
+}
