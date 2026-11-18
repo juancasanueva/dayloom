@@ -46,11 +46,6 @@ struct ThemeSettingsSection: View {
 
             Divider()
 
-            Text("Dayloom uses your dark theme when it appears dark, and your light theme otherwise.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
             themeGrid("Dark", ThemePalette.dark, selected: store.darkPalette)
             themeGrid("Light", ThemePalette.light, selected: store.lightPalette)
         }
@@ -92,6 +87,9 @@ private struct ThemeSwatch: View {
                     Text(palette.name)
                         .font(.callout.weight(isSelected ? .semibold : .regular))
                         .foregroundStyle(isSelected ? .primary : .secondary)
+                        // Long names such as "Catppuccin Macchiato" shrink a little instead of wrapping.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     if isSelected {
                         Image(systemName: "checkmark")
                             .font(.caption.weight(.bold))
