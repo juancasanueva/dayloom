@@ -6,7 +6,7 @@ final class ZoomMeetingService {
         config: ZoomOAuthConfig.app,
         store: KeychainTokenStore.zoom,
         transport: URLSessionTransport(),
-        authorizer: WebAuthenticationSessionAuthorizer()
+        authorizer: LoopbackAuthorizer(port: ZoomOAuthConfig.loopbackPort, path: ZoomOAuthConfig.callbackPath)
     ))
 
     static let meetingsEndpoint = URL(string: "https://api.zoom.us/v2/users/me/meetings")!

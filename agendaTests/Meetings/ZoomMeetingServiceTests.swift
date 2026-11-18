@@ -36,13 +36,17 @@ struct ZoomOAuthTests {
         #expect(url.absoluteString.hasPrefix("https://zoom.us/oauth/authorize?"))
         #expect(query == [
             "client_id": "zoomClient123",
-            "redirect_uri": "dayloom://oauth/zoom",
+            "redirect_uri": "http://127.0.0.1:47823/callback",
             "response_type": "code",
             "code_challenge": OAuthFixture.pkce.challenge,
             "code_challenge_method": "S256",
             "state": "state-1",
         ])
-        #expect(Fixture.config.callbackScheme == "dayloom")
+    }
+
+    @Test func zoomUsesTheRegisteredPublicClient() {
+        #expect(ZoomOAuthConfig.app.clientID == "D8b6gHTwRe62LTWG3OF7OQ")
+        #expect(ZoomOAuthConfig.app.redirectURI == "http://127.0.0.1:47823/callback")
     }
 
     @Test func aClientIDIsNeeded() {
@@ -69,7 +73,7 @@ struct ZoomMeetingServiceTests {
 
         #expect(meeting.provider == .zoom)
         #expect(meeting.url.absoluteString == "https://us05web.zoom.us/j/81234567890?pwd=AbC123.1")
-        #expect(authorizer.calls.map(\.scheme) == ["dayloom"])
+        #expect(authorizer.calls.count == 1)
 
         let exchange = transport.requests[0]
         #expect(exchange.url?.absoluteString == "https://zoom.us/oauth/token")
@@ -78,7 +82,7 @@ struct ZoomMeetingServiceTests {
             "grant_type": "authorization_code",
             "code": "code-1",
             "client_id": "zoomClient123",
-            "redirect_uri": "dayloom://oauth/zoom",
+            "redirect_uri": "http://127.0.0.1:47823/callback",
             "code_verifier": OAuthFixture.pkce.verifier,
         ])
 
