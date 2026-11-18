@@ -144,7 +144,8 @@ struct NoteEditor {
     // MARK: Commands
 
     /// Applies a slash command, clearing the typed `/word`.
-    /// `.event` only clears the text: the caller picks the event and calls `setEvent`.
+    /// `.event` and `.existingTask` only clear the text: the caller picks the event or task
+    /// and calls `setEvent` or `linkTask`.
     @discardableResult
     func apply(_ command: SlashCommand, to block: NoteBlock, in context: ModelContext) -> NoteFocus {
         block.text = ""
@@ -157,7 +158,7 @@ struct NoteEditor {
             return makeDivider(block)
         case .task:
             convertToTask(block, in: context)
-        case .event:
+        case .event, .existingTask:
             break
         }
         return NoteFocus(block: block, caret: 0)
@@ -177,6 +178,14 @@ struct NoteEditor {
         block.text = title
         touch(block)
         return task
+    }
+
+    /// Shows an existing task in the block. The task itself is left unchanged.
+    func linkTask(_ task: TaskItem, to block: NoteBlock) {
+        block.task = task
+        block.kind = .task
+        block.syncTaskSnapshot()
+        touch(block)
     }
 
     func setEvent(_ entry: CalendarEntry, on block: NoteBlock) {

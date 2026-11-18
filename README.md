@@ -24,7 +24,7 @@ Or download `Dayloom-<version>.zip` from the [latest release](https://github.com
 - **Reminders**: a notification before a task starts, or on the day it's due.
 - **Quick Launcher**: capture tasks from anywhere with a global hotkey.
 - **Habits**: daily habits with streaks, plus recurring tasks.
-- **Notes**: block-based notes with headings, lists, checklists, linked tasks and calendar events, plus a daily note.
+- **Notes**: block-based notes with headings, lists, checklists, tasks (new ones or existing ones you search for) and calendar events, plus a daily note.
 - **Appearance**: light, dark or system appearance, with a choice of color themes, including Catppuccin, Nord, Dracula, Solarized, Gruvbox, Tokyo Night and Rosé Pine.
 - **iCloud sync**: all data syncs through your private iCloud database. Settings (⌘,) shows the sync status.
 

@@ -250,7 +250,8 @@ struct NoteEditorTests {
 
     @Test func slashFiltersByTypedWord() {
         #expect(SlashCommand.matching("che") == [.checklist])
-        #expect(SlashCommand.matching("TA") == [.task])
+        #expect(SlashCommand.matching("TA") == [.task, .existingTask])
+        #expect(SlashCommand.matching("link") == [.existingTask])
         #expect(SlashCommand.matching("list") == [.bullet, .checklist])
         #expect(SlashCommand.matching("zzz").isEmpty)
     }
@@ -334,6 +335,55 @@ struct NoteEditorTests {
 
         #expect(block.kind == .task)
         #expect(block.task?.title == "")
+    }
+
+    @Test func existingTaskCommandOnlyClearsText() throws {
+        let context = try makeInMemoryContext()
+        let note = makeNote([(.text, "/exi")], in: context)
+        let block = note.orderedBlocks[0]
+
+        editor.apply(.existingTask, to: block, in: context)
+
+        #expect(block.kind == .text)
+        #expect(block.text == "")
+        #expect(block.task == nil)
+        #expect(try context.fetch(FetchDescriptor<TaskItem>()).isEmpty)
+    }
+
+    @Test func linkingExistingTaskShowsItWithoutCopying() throws {
+        let context = try makeInMemoryContext()
+        let task = TaskItem(title: "Renew passport", createdAt: TestClock.date(2026, 10, 1))
+        context.insert(task)
+        task.setCompleted(true, at: TestClock.now, calendar: TestClock.calendar)
+        let note = makeNote([(.text, "")], in: context)
+        let block = note.orderedBlocks[0]
+
+        editor.linkTask(task, to: block)
+
+        #expect(block.kind == .task)
+        #expect(block.task === task)
+        #expect(block.text == "Renew passport")
+        #expect(block.isChecked)
+        #expect(note.updatedAt == TestClock.now)
+        #expect(try context.fetch(FetchDescriptor<TaskItem>()).count == 1)
+    }
+
+    @Test func taskPickerListsOpenTasksNewestFirstWithoutQuery() throws {
+        let old = TaskItem(title: "Old", createdAt: TestClock.date(2026, 10, 1))
+        let new = TaskItem(title: "New", createdAt: TestClock.date(2026, 11, 1))
+        let done = TaskItem(title: "Done", createdAt: TestClock.date(2026, 11, 2))
+        done.status = .done
+
+        #expect(TaskPicker.candidates(from: [old, done, new], query: " ") == [new, old])
+    }
+
+    @Test func taskPickerSearchesTitlesOpenFirst() throws {
+        let open = TaskItem(title: "Call the bank", createdAt: TestClock.date(2026, 10, 1))
+        let done = TaskItem(title: "Bank transfer", createdAt: TestClock.date(2026, 11, 1))
+        done.status = .done
+        let other = TaskItem(title: "Groceries", createdAt: TestClock.date(2026, 11, 1))
+
+        #expect(TaskPicker.candidates(from: [done, other, open], query: "BANK") == [open, done])
     }
 
     @Test func deletedTaskLeavesChecklistWithLastTitle() throws {

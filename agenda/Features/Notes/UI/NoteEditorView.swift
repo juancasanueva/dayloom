@@ -20,6 +20,7 @@ struct NoteEditorView: View {
     @FocusState private var isTitleFocused: Bool
     @State private var caretRequest: CaretRequest?
     @State private var eventTarget: NoteBlock?
+    @State private var taskTarget: NoteBlock?
 
     /// Built per edit so each change is stamped with the current time.
     private var editor: NoteEditor { NoteEditor() }
@@ -59,6 +60,11 @@ struct NoteEditorView: View {
         .sheet(item: $eventTarget) { block in
             EventPickerSheet(day: note.dailyDate ?? .now) { entry in
                 editor.setEvent(entry, on: block)
+            }
+        }
+        .sheet(item: $taskTarget) { block in
+            TaskPickerSheet { task in
+                editor.linkTask(task, to: block)
             }
         }
     }
@@ -124,6 +130,8 @@ struct NoteEditorView: View {
             place(editor.apply(command, to: block, in: modelContext))
             if command == .event {
                 eventTarget = block
+            } else if command == .existingTask {
+                taskTarget = block
             }
         case .convertToTask:
             editor.convertToTask(block, in: modelContext)
