@@ -4,7 +4,7 @@ import SwiftUI
 /// The app's Settings window: one tab per area, each sized to its own content.
 struct SettingsView: View {
     enum Tab: String {
-        case appearance, notifications, videoCalls, iCloud
+        case appearance, shortcuts, notifications, videoCalls, iCloud
     }
 
     /// Settings reopens on the tab used last.
@@ -15,6 +15,10 @@ struct SettingsView: View {
             page { ThemeSettingsSection() }
                 .tabItem { Label("Appearance", systemImage: "paintbrush") }
                 .tag(Tab.appearance)
+
+            page { ShortcutSettingsSection() }
+                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                .tag(Tab.shortcuts)
 
             page { ReminderSettingsSection() }
                 .tabItem { Label("Notifications", systemImage: "bell") }

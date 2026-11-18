@@ -14,9 +14,11 @@ final class GlobalHotKey {
     private var hotKeyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
 
-    /// Control-Option-Space, the shortcut that opens the launcher from any app.
-    static func launcher(action: @escaping () -> Void) -> GlobalHotKey? {
-        GlobalHotKey(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey), action: action)
+    /// The shortcut that opens the launcher from any app (Control-Option-Space by default).
+    /// Returns nil when the key can't be registered or another app owns the shortcut.
+    static func launcher(shortcut: Shortcut, action: @escaping () -> Void) -> GlobalHotKey? {
+        guard let keyCode = shortcut.carbonKeyCode else { return nil }
+        return GlobalHotKey(keyCode: keyCode, modifiers: shortcut.carbonModifiers, action: action)
     }
 
     /// Returns `nil` when the system refuses the shortcut, for example because another app owns it.

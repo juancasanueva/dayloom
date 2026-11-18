@@ -31,10 +31,10 @@ struct NotesView: View {
         .plannerPanel()
         .navigationTitle("Notes")
         .toolbar(removing: .title)
-        // ⌘F reaches the search field, which lives above the list instead of in the toolbar.
+        // ⌘F (or the keys.toml search_notes shortcut) reaches the search field, which lives above the list.
         .background {
             Button("Search Notes") { isSearchFocused = true }
-                .keyboardShortcut("f")
+                .keyboardShortcut(for: .searchNotes)
                 .hidden()
         }
         .onAppear(perform: consumePendingNewNote)
@@ -56,7 +56,7 @@ struct NotesView: View {
                 Button("Today's Note", systemImage: "sun.max", action: openTodaysNote)
                     .help("Open today's note")
                 Button("New Note", systemImage: "square.and.pencil", action: createNote)
-                    .help("New note (⇧⌘N)")
+                    .help("New note (\(ShortcutStore.shared.shortcut(for: .newNote).displayText))")
             }
             .buttonStyle(PageControlStyle())
         }

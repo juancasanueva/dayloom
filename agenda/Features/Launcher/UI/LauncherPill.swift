@@ -16,7 +16,7 @@ struct LauncherPill: View {
             .lineLimit(1)
             .frame(width: 280, alignment: .leading)
             .overlay(alignment: .trailing) {
-                Text("⌘K")
+                Text(ShortcutStore.shared.shortcut(for: .quickLauncher).displayText)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 5)
@@ -30,7 +30,7 @@ struct LauncherPill: View {
         }
         .buttonStyle(.plain)
         .focusEffectDisabled()
-        .help("Search, add a task or plan an event (⌘K, or ⌃⌥Space from any app)")
+        .help("Search, add a task or plan an event (\(ShortcutStore.shared.shortcut(for: .quickLauncher).displayText), or \(ShortcutStore.shared.shortcut(for: .quickLauncherAnywhere).displayText) from any app)")
         .accessibilityLabel("Quick Launcher")
         .accessibilityHint("Search, add a task or plan an event")
     }

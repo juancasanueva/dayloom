@@ -157,20 +157,21 @@ private struct WeekNavigationControls: View {
 
     var body: some View {
         let unit = scope.title
+        let shortcuts = ShortcutStore.shared
 
         HStack(spacing: 6) {
             Button("Today", action: onToday)
-                .keyboardShortcut("t", modifiers: .command)
-                .help(scope == .day ? "Go to Today (⌘T)" : "Go to This \(unit) (⌘T)")
+                .keyboardShortcut(for: .calendarToday)
+                .help("\(scope == .day ? "Go to Today" : "Go to This \(unit)") (\(shortcuts.shortcut(for: .calendarToday).displayText))")
                 .buttonStyle(PageControlStyle(horizontalPadding: 12))
 
             HStack(spacing: 2) {
                 Button("Previous \(unit)", systemImage: "chevron.left", action: onPrevious)
-                    .keyboardShortcut(.leftArrow, modifiers: .command)
-                    .help("Previous \(unit) (⌘←)")
+                    .keyboardShortcut(for: .calendarPrevious)
+                    .help("Previous \(unit) (\(shortcuts.shortcut(for: .calendarPrevious).displayText))")
                 Button("Next \(unit)", systemImage: "chevron.right", action: onNext)
-                    .keyboardShortcut(.rightArrow, modifiers: .command)
-                    .help("Next \(unit) (⌘→)")
+                    .keyboardShortcut(for: .calendarNext)
+                    .help("Next \(unit) (\(shortcuts.shortcut(for: .calendarNext).displayText))")
             }
             .labelStyle(.iconOnly)
             .buttonStyle(PageControlStyle(horizontalPadding: 9))

@@ -58,6 +58,19 @@ Screenshots use sample data: Debug builds launched with `-DayloomDemo` open an i
 | Show or hide the inspector | ⌥⌘I |
 | Calendar, Inbox, Today, Upcoming, Completed, Habits, Notes | ⌘1 to ⌘7 |
 | Previous or next day, week or month; back to today | ⌘←, ⌘→, ⌘T |
+| Search notes | ⌘F |
+
+These are the defaults. To change them, edit `~/.config/dayloom/keys.toml`, which Dayloom writes the first time it runs with every shortcut and what it does; saving the file applies the changes right away:
+
+```toml
+[shortcuts]
+new_task = "cmd+shift+t"
+quick_launcher_anywhere = "ctrl+option+l"
+```
+
+Modifiers are `cmd`, `shift`, `option` and `ctrl`; keys are a letter, a digit, punctuation, or one of `left`, `right`, `up`, `down`, `space`, `return`, `escape`, `tab` and `delete`. Shortcuts inside Dayloom need `cmd` or `ctrl`. Settings → Shortcuts lists every shortcut and points out any line Dayloom couldn't use. Delete a line to go back to its default.
+
+Dayloom is sandboxed and can only reach `~/.config/dayloom`. If `~/.config` doesn't exist yet, create it with `mkdir ~/.config` and reopen Dayloom. For the same reason, `~/.config/dayloom` and `keys.toml` must be a real folder and file, not symlinks to somewhere else.
 
 ## Requirements
 

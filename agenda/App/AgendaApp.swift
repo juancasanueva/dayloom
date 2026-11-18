@@ -46,6 +46,12 @@ struct AgendaApp: App {
         if NSClassFromString("XCTestCase") == nil && !isDemo {
             NotificationScheduler.shared.start()
         }
+        // ~/.config/dayloom/keys.toml: written with the defaults the first time, then kept current.
+        // Tests and the screenshot demo use the defaults and never touch the user's file.
+        if !PlannerSchema.isRunningTests && !isDemo {
+            ShortcutStore.shared.load()
+            ShortcutStore.shared.startWatching()
+        }
         _syncStatus = State(initialValue: syncStatus)
     }
 
@@ -56,6 +62,11 @@ struct AgendaApp: App {
                 .environment(calendarModel)
                 .themedAppearance()
                 .task { registerLauncherHotKey() }
+                .onChange(of: ShortcutStore.shared.shortcut(for: .quickLauncherAnywhere)) {
+                    // Releasing the old hotkey unregisters it before the new one is registered.
+                    launcherHotKey = nil
+                    registerLauncherHotKey()
+                }
         }
         .modelContainer(modelContainer)
         .defaultSize(width: 1180, height: 760)
@@ -69,14 +80,16 @@ struct AgendaApp: App {
         }
     }
 
-    /// ⌃⌥Space brings the app forward with the launcher open, even from another app.
+    /// The launcher's system-wide shortcut (⌃⌥Space unless keys.toml says otherwise) brings the
+    /// app forward with the launcher open, even from another app.
     private func registerLauncherHotKey() {
         guard launcherHotKey == nil else { return }
         let appState = appState
-        launcherHotKey = GlobalHotKey.launcher {
+        launcherHotKey = GlobalHotKey.launcher(shortcut: ShortcutStore.shared.shortcut(for: .quickLauncherAnywhere)) {
             NSApp.activate()
             appState.isLauncherPresented = true
         }
+        ShortcutStore.shared.reportSystemWideShortcut(registered: launcherHotKey != nil)
     }
 
     /// Sync can't enforce uniqueness, so copies made on two Macs are folded together after each
@@ -103,35 +116,35 @@ private struct PlannerCommands: Commands {
 
         CommandGroup(replacing: .newItem) {
             Button("New Task") { appState.requestQuickAdd() }
-                .keyboardShortcut("n")
+                .keyboardShortcut(for: .newTask)
             Button("New Note") { appState.requestNewNote() }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
+                .keyboardShortcut(for: .newNote)
             Button("Quick Launcher") { appState.isLauncherPresented.toggle() }
-                .keyboardShortcut("k")
+                .keyboardShortcut(for: .quickLauncher)
         }
 
         CommandGroup(after: .sidebar) {
             Button(appState.isInspectorPresented ? "Hide Inspector" : "Show Inspector") {
                 appState.isInspectorPresented.toggle()
             }
-            .keyboardShortcut("i", modifiers: [.command, .option])
+            .keyboardShortcut(for: .toggleInspector)
         }
 
         CommandMenu("Go") {
             Button("Calendar") { appState.selection = .calendar }
-                .keyboardShortcut("1")
+                .keyboardShortcut(for: .goCalendar)
             Button("Inbox") { appState.selection = .tasks(.inbox) }
-                .keyboardShortcut("2")
+                .keyboardShortcut(for: .goInbox)
             Button("Today") { appState.selection = .tasks(.today) }
-                .keyboardShortcut("3")
+                .keyboardShortcut(for: .goToday)
             Button("Upcoming") { appState.selection = .tasks(.upcoming) }
-                .keyboardShortcut("4")
+                .keyboardShortcut(for: .goUpcoming)
             Button("Completed") { appState.selection = .tasks(.completed) }
-                .keyboardShortcut("5")
+                .keyboardShortcut(for: .goCompleted)
             Button("Habits") { appState.selection = .habits }
-                .keyboardShortcut("6")
+                .keyboardShortcut(for: .goHabits)
             Button("Notes") { appState.selection = .notes }
-                .keyboardShortcut("7")
+                .keyboardShortcut(for: .goNotes)
         }
     }
 }

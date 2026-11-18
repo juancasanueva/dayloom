@@ -41,7 +41,7 @@ struct RootView: View {
                 } label: {
                     Label(appState.isInspectorPresented ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.right")
                 }
-                .help(appState.isInspectorPresented ? "Hide Inspector (⌥⌘I)" : "Show Inspector (⌥⌘I)")
+                .help("\(appState.isInspectorPresented ? "Hide Inspector" : "Show Inspector") (\(ShortcutStore.shared.shortcut(for: .toggleInspector).displayText))")
             }
         }
         .background { ReminderSync() }
