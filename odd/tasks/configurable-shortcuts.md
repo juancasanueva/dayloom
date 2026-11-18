@@ -18,11 +18,11 @@ User request (L1): "I want the app to create a keys.toml file in .config/dayloom
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
-| T1 | S3, S6 | inline | done (model, parser, defaults, file text) | |
-| T2 | S1, S2, S5 | inline | done (file creation, live reload, sandbox exception; missing ~/.config explained) | |
-| T3 | S2, S6 | inline | done (menus, calendar, notes, launcher pill, inspector and system-wide hotkey) | |
-| T4 | S4 | inline | done (Shortcuts tab) | |
-| T5 | S1–S4 | inline | done (README) | |
+| T1 | S3, S6 | inline | done (model, parser, defaults, file text) | fc5dba7 |
+| T2 | S1, S2, S5 | inline | done (file creation, live reload, sandbox exception; missing ~/.config explained) | fc5dba7 |
+| T3 | S2, S6 | inline | done (menus, calendar, notes, launcher pill, inspector and system-wide hotkey) | fc5dba7 |
+| T4 | S4 | inline | done (Shortcuts tab) | fc5dba7 |
+| T5 | S1–S4 | inline | done (README) | fc5dba7 |
 
 ## Log
 
@@ -30,3 +30,4 @@ User request (L1): "I want the app to create a keys.toml file in .config/dayloom
 - L2 Mapped 16 configurable shortcuts in AgendaApp (menus), WeekView (calendar), NotesView (search) and GlobalHotKey (⌃⌥Space). The app is sandboxed, so ~/.config needs a home-relative-path exception.
 - L3 Live checks in the running app: keys.toml created in ~/.config/dayloom through the sandbox exception; editing go_inbox to cmd+i changed Go > Inbox to ⌘I without a restart; an invalid new_note = "n" kept ⇧⌘N and was reported in the Shortcuts tab; quick_launcher_anywhere = "ctrl+option+l" worked from Finder and ⌃⌥Space was released.
 - L4 Independent verifier (risk item 2, sandbox exception): S2–S6 met; blockers: S1 fails when ~/.config doesn't exist (the sandbox can't create a parent), and hard-coded hints (launcher pill, inspector, new note). Fixed: missing ~/.config is explained with the mkdir command instead of a permission error (exception stays limited, S5); hints read the configured shortcuts; also CRLF line numbers, BOM, repeated actions, section message, unregistered system-wide shortcut reported, FSEvents stopped on deinit. 340 tests green.
+- L5 (2026-11-18) User: "commit". Committed as fc5dba7. Native review (risk, resilience, readability, reliability) granted by the user: its only blocker said the per-list layout commit (ccb763e, in the same range) was unrequested, because that request lived only in conversation; corrected by recording it in odd/tasks/per-list-layout.md (72b1a26). The successor review was approved and acknowledged with 13 non-blocking follow-ups (notably: remaps onto reserved keys like ⌘Q aren't flagged, a failed system-wide re-registration has no fallback to the previous keys, and a reload error briefly drops custom shortcuts to the defaults).
