@@ -32,7 +32,7 @@ struct WeekView: View {
                         .pickerStyle(.segmented)
                         .labelsHidden()
                         .fixedSize()
-                        .help("Show a week or a month")
+                        .help("Show a day, a week, or a month")
 
                         WeekNavigationControls(
                             scope: model.scope,
@@ -110,7 +110,11 @@ struct WeekView: View {
     }
 
     private func title(for days: [Date]) -> String {
-        if model.scope == .month { return model.anchor.formatted(.dateTime.month(.wide).year()) }
+        switch model.scope {
+        case .day: return model.anchor.formatted(.dateTime.month(.wide).day().year())
+        case .month: return model.anchor.formatted(.dateTime.month(.wide).year())
+        case .week: break
+        }
         guard let first = days.first, let last = days.last else { return "Calendar" }
         let calendar = Calendar.current
         if calendar.isDate(first, equalTo: last, toGranularity: .month) {
@@ -119,12 +123,15 @@ struct WeekView: View {
         return "\(first.formatted(.dateTime.month(.abbreviated))) – \(last.formatted(.dateTime.month(.abbreviated).year()))"
     }
 
-    /// The visible days, such as "Nov 16 – 22", and how much is on them.
+    /// The visible days, such as "Nov 16 – 22" or "Wednesday", and how much is on them.
     private func subtitle(for days: [Date], count: Int) -> String {
-        if model.scope == .month { return count == 0 ? "Nothing scheduled" : "\(count) scheduled" }
-        guard let first = days.first, let last = days.last else { return "" }
-        let range = (first..<last).formatted(.interval.month(.abbreviated).day())
-        return count == 0 ? "\(range) · Nothing scheduled" : "\(range) · \(count) scheduled"
+        let summary = count == 0 ? "Nothing scheduled" : "\(count) scheduled"
+        guard let first = days.first, let last = days.last else { return summary }
+        switch model.scope {
+        case .day: return "\(first.formatted(.dateTime.weekday(.wide))) · \(summary)"
+        case .week: return "\((first..<last).formatted(.interval.month(.abbreviated).day())) · \(summary)"
+        case .month: return summary
+        }
     }
 
     private func selectTask(_ id: PersistentIdentifier) {
@@ -141,7 +148,7 @@ struct WeekView: View {
 
 // MARK: - Week navigation
 
-/// Previous, back to today, and next — by week or by month — shown in the page header.
+/// Previous, back to today, and next — by day, week, or month — shown in the page header.
 private struct WeekNavigationControls: View {
     var scope: CalendarScope
     var onPrevious: () -> Void
@@ -149,19 +156,21 @@ private struct WeekNavigationControls: View {
     var onNext: () -> Void
 
     var body: some View {
+        let unit = scope.title
+
         HStack(spacing: 6) {
             Button("Today", action: onToday)
                 .keyboardShortcut("t", modifiers: .command)
-                .help(scope == .week ? "Go to This Week (⌘T)" : "Go to This Month (⌘T)")
+                .help(scope == .day ? "Go to Today (⌘T)" : "Go to This \(unit) (⌘T)")
                 .buttonStyle(PageControlStyle(horizontalPadding: 12))
 
             HStack(spacing: 2) {
-                Button(scope == .week ? "Previous Week" : "Previous Month", systemImage: "chevron.left", action: onPrevious)
+                Button("Previous \(unit)", systemImage: "chevron.left", action: onPrevious)
                     .keyboardShortcut(.leftArrow, modifiers: .command)
-                    .help(scope == .week ? "Previous Week (⌘←)" : "Previous Month (⌘←)")
-                Button(scope == .week ? "Next Week" : "Next Month", systemImage: "chevron.right", action: onNext)
+                    .help("Previous \(unit) (⌘←)")
+                Button("Next \(unit)", systemImage: "chevron.right", action: onNext)
                     .keyboardShortcut(.rightArrow, modifiers: .command)
-                    .help(scope == .week ? "Next Week (⌘→)" : "Next Month (⌘→)")
+                    .help("Next \(unit) (⌘→)")
             }
             .labelStyle(.iconOnly)
             .buttonStyle(PageControlStyle(horizontalPadding: 9))

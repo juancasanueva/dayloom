@@ -36,6 +36,16 @@ struct WeekCalendar {
         calendar.date(byAdding: .weekOfYear, value: weeks, to: date) ?? date
     }
 
+    /// The whole day containing `date`, from midnight to the next midnight.
+    func dayInterval(containing date: Date) -> DateInterval {
+        let (start, end) = bounds(of: date)
+        return DateInterval(start: start, end: end)
+    }
+
+    func shift(_ date: Date, byDays days: Int) -> Date {
+        calendar.date(byAdding: .day, value: days, to: date) ?? date
+    }
+
     /// The half hour on `day` that a point `minute` minutes into the day falls in, for a new task.
     func slotStart(on day: Date, atMinute minute: Double) -> Date {
         let snapped = min(max(Int(minute), 0) / 30 * 30, 23 * 60 + 30)

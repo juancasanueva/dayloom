@@ -52,6 +52,54 @@ struct WeekCalendarModelTests {
         #expect(model.days.first == TestClock.date(2026, 11, 16))
     }
 
+    @Test func dayScopeShowsOnlyTheAnchorDay() {
+        let (model, _) = makeModel(access: .granted)
+
+        model.scope = .day
+
+        #expect(model.days == [TestClock.date(2026, 11, 17)])
+        #expect(model.interval == DateInterval(start: TestClock.date(2026, 11, 17), end: TestClock.date(2026, 11, 18)))
+        #expect(model.events.isEmpty)
+    }
+
+    @Test func navigatingDaysReloadsEvents() {
+        let (model, _) = makeModel(access: .granted)
+        model.scope = .day
+
+        model.showNext()
+        #expect(model.days == [TestClock.date(2026, 11, 18)])
+        #expect(model.events.map(\.id) == ["This week"])
+
+        model.showPrevious()
+        model.showPrevious()
+        #expect(model.days == [TestClock.date(2026, 11, 16)])
+        #expect(model.events.isEmpty)
+
+        model.showToday(TestClock.now)
+        #expect(model.days == [TestClock.date(2026, 11, 17)])
+    }
+
+    @Test func showDaySwitchesToTheDayScope() {
+        let (model, _) = makeModel(access: .granted)
+
+        model.showDay(TestClock.date(2026, 11, 25, 15))
+
+        #expect(model.scope == .day)
+        #expect(model.days == [TestClock.date(2026, 11, 25)])
+        #expect(model.events.map(\.id) == ["Next week"])
+    }
+
+    @Test func weekScopeStillMovesByWeeks() {
+        let (model, _) = makeModel(access: .granted)
+        model.scope = .day
+        model.scope = .week
+
+        model.showNext()
+
+        #expect(model.days.count == 7)
+        #expect(model.days.first == TestClock.date(2026, 11, 23))
+    }
+
     @Test func deniedAccessShowsNoEvents() {
         let (model, _) = makeModel(access: .denied)
 
