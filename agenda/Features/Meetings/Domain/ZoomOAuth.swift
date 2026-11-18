@@ -6,7 +6,8 @@ struct ZoomOAuthConfig: OAuthClientConfig, Equatable {
     /// The app's public client ID from the Zoom App Marketplace (not the client ID that needs a secret).
     static let app = ZoomOAuthConfig(clientID: "D8b6gHTwRe62LTWG3OF7OQ")
 
-    /// Registered in Zoom as the PKCE redirect, `http://127.0.0.1:47823/callback`.
+    /// Zoom's PKCE redirect is registered without a port (`http://127.0.0.1/callback`): like RFC 8252
+    /// describes, Zoom accepts any port on a loopback redirect, and rejects one registered with a port.
     static let loopbackPort: UInt16 = 47823
     static let callbackPath = "/callback"
 

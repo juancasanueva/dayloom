@@ -34,7 +34,7 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 |----|-------|-------|--------|--------|
 | T1 | S1.1–S1.3, S2.1–S2.3 | inline | done (260 tests green; app opened on existing data) | a75190d |
 | T2 | S3.1–S3.6 Google Meet | inline | done (278 tests green, independent verifier: no blockers); live use waits on the user's client ID | 6353854 |
-| T3 | S3.8–S3.9 Zoom | inline | done in code (295 tests green, independent verifier: no blockers); live use waits on the user's Zoom client ID and redirect acceptance | 96f2ae3 |
+| T3 | S3.8–S3.9 Zoom | inline | done in code (295 tests green, independent verifier: no blockers); verified live (L17) | 96f2ae3 |
 | T4 | S3.7 Teams (open Teams, paste link) | inline | done (285 tests green) | b1bdd99 |
 
 ## Log
@@ -55,3 +55,4 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 - L14 Loopback sign-in in 073cc7f: RED observed (missing LoopbackAuthorizer; then a stray /callback ending sign-in), GREEN with 302 tests (real sockets in the sandbox). Risk item 2 (sandbox incoming connections, sign-in): independent verifier found no blockers (loopback-only bind, no port takeover, clean overlap failure); fixed its advisories on stray callbacks and listener handlers. Waiting on the user's live Zoom sign-in.
 - L15 Native review (risk, resilience, reliability) of 0c0b6ab..f329a4e: granted, approved and acknowledged; 10 non-blocking follow-ups, notably an abandoned sign-in holding port 47823 until the 3-minute timeout, single-read requests, untested listener failure paths, and task cancellation not stopping the listener. First live Zoom attempt reached Zoom's consent page and failed with "Invalid scope" (no scopes added to the Zoom app yet).
 - L16 (2026-11-18) User's live attempt failed: "Zoom sign-in failed (couldn't listen for the sign-in reply (The operation couldn't be completed. (Network.NWError error 48 - Address already in use)))". lsof: Dayloom itself held 127.0.0.1:47823 from an earlier waiting sign-in. Fixed in 9d36868 (RED reproduced the same error; GREEN 303 tests, listener suite stable over 3 runs).
+- L17 (2026-11-18) Zoom live check: with the PKCE redirect registered as `http://127.0.0.1:47823/callback` Zoom answered "Invalid redirect URL"; registered as `http://127.0.0.1/callback` (no port, RFC 8252 loopback) it showed the consent page while the app sent port 47823. After Allow, the task got https://us04web.zoom.us/j/75508105239 with Join Zoom. User: "it worked". T3 verified live.
