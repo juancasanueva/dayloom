@@ -9,6 +9,9 @@ final class LoopbackAuthorizer: WebAuthorizer {
     let path: String
     let timeout: TimeInterval
     private let openURL: (URL) -> Void
+    /// Ends the sign-in still waiting for its browser, if any, and returns once its port is free.
+    private var stopWaitingSignIn: (() async -> Void)?
+    private var waitingSignIn: UUID?
 
     init(port: UInt16, path: String, timeout: TimeInterval = 180, openURL: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) }) {
         self.port = port
@@ -19,6 +22,12 @@ final class LoopbackAuthorizer: WebAuthorizer {
 
     /// `callbackScheme` is unused: the redirect is recognized by its port and path instead.
     func authorize(url: URL, callbackScheme: String) async throws -> URL {
+        // A sign-in left waiting (for example after an error page that never redirects) would hold
+        // the port; the newer attempt wins and the older one ends as cancelled.
+        if let stopWaitingSignIn {
+            await stopWaitingSignIn()
+        }
+
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: port)!)
         parameters.allowLocalEndpointReuse = true
@@ -30,19 +39,31 @@ final class LoopbackAuthorizer: WebAuthorizer {
         }
 
         return try await withCheckedThrowingContinuation { continuation in
+            let signIn = UUID()
             var isFinished = false
+            var isReleased = false
+            var releaseWaiters: [CheckedContinuation<Void, Never>] = []
             var deadline: DispatchWorkItem?
 
             func finish(_ result: Result<URL, Error>) {
                 guard !isFinished else { return }
                 isFinished = true
                 deadline?.cancel()
+                if self.waitingSignIn == signIn {
+                    self.waitingSignIn = nil
+                    self.stopWaitingSignIn = nil
+                }
                 // Stops new connections; the page already being sent to the browser still goes out.
-                // Clearing the handlers releases what they captured, including this function.
-                listener.newConnectionHandler = nil
-                listener.stateUpdateHandler = nil
                 listener.cancel()
                 continuation.resume(with: result)
+            }
+
+            waitingSignIn = signIn
+            stopWaitingSignIn = {
+                finish(.failure(MeetingServiceError.signInCancelled))
+                if !isReleased {
+                    await withCheckedContinuation { releaseWaiters.append($0) }
+                }
             }
 
             listener.newConnectionHandler = { connection in
@@ -71,6 +92,13 @@ final class LoopbackAuthorizer: WebAuthorizer {
                         self.openURL(url)
                     case .failed(let error):
                         finish(.failure(MeetingServiceError.signInSheetFailed(reason: "couldn't listen for the sign-in reply (\(error.localizedDescription))")))
+                    case .cancelled:
+                        // The port is free. Clearing the handlers releases what they captured, including `finish`.
+                        isReleased = true
+                        releaseWaiters.forEach { $0.resume() }
+                        releaseWaiters.removeAll()
+                        listener.newConnectionHandler = nil
+                        listener.stateUpdateHandler = nil
                     default:
                         break
                     }

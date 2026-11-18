@@ -59,6 +59,25 @@ struct LoopbackAuthorizerTests {
         #expect(callback.absoluteString == "http://127.0.0.1:47905/callback?state=s5&code=c5")
     }
 
+    @Test func aNewSignInReplacesOneStillWaiting() async throws {
+        var opens = 0
+        let authorizer = LoopbackAuthorizer(port: 47906, path: "/callback", timeout: 30) { _ in
+            opens += 1
+            // Only the second sign-in gets a reply; the first is left waiting, as after a Zoom error page.
+            if opens == 2 {
+                Task { _ = await Self.visit(URL(string: "http://127.0.0.1:47906/callback?state=s6&code=c6")!) }
+            }
+        }
+
+        let first = Task { try await authorizer.authorize(url: URL(string: "https://zoom.us/oauth/authorize?n=1")!, callbackScheme: "http") }
+        try await Task.sleep(for: .milliseconds(300))
+        let second = try await authorizer.authorize(url: URL(string: "https://zoom.us/oauth/authorize?n=2")!, callbackScheme: "http")
+
+        #expect(second.absoluteString == "http://127.0.0.1:47906/callback?state=s6&code=c6")
+        await #expect(throws: MeetingServiceError.signInCancelled) { try await first.value }
+        #expect(opens == 2)
+    }
+
     @Test func givingUpOnTheBrowserCountsAsCancelled() async {
         let authorizer = LoopbackAuthorizer(port: 47903, path: "/callback", timeout: 0.3) { _ in }
 
