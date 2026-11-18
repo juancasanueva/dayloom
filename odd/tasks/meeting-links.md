@@ -33,7 +33,7 @@ User request (L1): "For I given task, I want to be able to indicate that its a v
 | T1 | S1.1–S1.3, S2.1–S2.3 | inline | done (260 tests green; app opened on existing data) | a75190d |
 | T2 | S3.1–S3.6 Google Meet | inline | done (278 tests green, independent verifier: no blockers); live use waits on the user's client ID | 6353854 |
 | T3 | S3.1–S3.2 Zoom | inline | blocked: needs a Zoom OAuth app | |
-| T4 | S3.7 Teams (open Teams, paste link) | inline | in progress | |
+| T4 | S3.7 Teams (open Teams, paste link) | inline | done (285 tests green) | b1bdd99 |
 
 ## Log
 
