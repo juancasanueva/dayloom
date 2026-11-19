@@ -41,6 +41,9 @@ final class Note {
     @Relationship(deleteRule: .cascade, inverse: \NoteBlock.note)
     var blocks: [NoteBlock]? = []
 
+    /// Tasks this note was linked to by hand; see `TaskItem.linkedNotes`.
+    var linkedTasks: [TaskItem]? = []
+
     init(title: String, createdAt: Date = .now) {
         self.title = title
         self.createdAt = createdAt

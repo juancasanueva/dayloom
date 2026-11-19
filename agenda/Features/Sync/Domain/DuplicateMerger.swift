@@ -71,6 +71,10 @@ struct DuplicateMerger {
                     block.sortIndex = (survivor.orderedBlocks.last?.sortIndex ?? 0) + 1
                     block.note = survivor
                 }
+                for task in duplicate.linkedTasks ?? [] {
+                    task.unlink(duplicate)
+                    task.link(survivor)
+                }
                 survivor.isPinned = survivor.isPinned || duplicate.isPinned
                 survivor.updatedAt = max(survivor.updatedAt, duplicate.updatedAt)
                 context.delete(duplicate)

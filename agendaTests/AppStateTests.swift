@@ -38,6 +38,24 @@ struct AppStateTests {
         #expect(state.isInspectorPresented)
     }
 
+    /// A note linked to a task opens in Notes, leaving the task's details behind.
+    @Test func openingANoteShowsItInNotes() throws {
+        let context = try makeInMemoryContext()
+        let note = Note(title: "Research")
+        context.insert(note)
+        try context.save()
+        let state = AppState()
+        state.selection = .tasks(.today)
+        _ = try selectedTask(in: state)
+
+        state.open(note: note.persistentModelID)
+
+        #expect(state.selection == .notes)
+        #expect(state.selectedNoteID == note.persistentModelID)
+        #expect(state.selectedTaskID == nil)
+        #expect(!state.isInspectorPresented)
+    }
+
     /// The quick launcher opens a task's details without changing the view.
     @Test func selectingATaskWithoutChangingViewShowsIt() throws {
         let state = AppState()
