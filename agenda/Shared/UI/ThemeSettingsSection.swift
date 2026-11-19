@@ -51,7 +51,7 @@ struct ThemeSettingsSection: View {
         }
     }
 
-    private func themeGrid(_ title: String, _ palettes: [ThemePalette], selected: ThemePalette) -> some View {
+    private func themeGrid(_ title: LocalizedStringKey, _ palettes: [ThemePalette], selected: ThemePalette) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.subheadline.weight(.semibold))

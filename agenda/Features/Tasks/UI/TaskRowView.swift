@@ -15,7 +15,7 @@ struct TaskRowView: View {
             CompletionButton(task: task)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(task.title.isEmpty ? "Untitled" : task.title)
+                Text(task.title.isEmpty ? String(appLocalized: "Untitled") : task.title)
                     .fontWeight(.medium)
                     .strikethrough(task.isDone)
                     .foregroundStyle(task.isDone ? .secondary : .primary)
@@ -62,14 +62,14 @@ struct TaskRowView: View {
                     .foregroundStyle(emphasis.color)
             }
             if let start = task.scheduledStart {
-                Label(start.formatted(date: .omitted, time: .shortened), systemImage: "clock")
+                Label(start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)), systemImage: "clock")
                     .foregroundStyle(emphasis.color)
                     .fontWeight(emphasis == .normal ? .regular : .semibold)
             }
             if task.repeatRule.repeats {
                 Image(systemName: "repeat")
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Repeats \(task.repeatRule.title.lowercased())")
+                    .accessibilityLabel("Repeats \(task.repeatRule.phrase)")
             }
             let progress = task.subtaskProgress
             if progress.total > 0 {

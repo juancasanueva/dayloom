@@ -97,11 +97,20 @@ enum Theme {
 
 /// A screen's large title, a short subtitle, and optional controls on the trailing side.
 struct PageHeader<Accessory: View>: View {
-    let title: String
+    let title: Text
     let subtitle: String
     @ViewBuilder let accessory: Accessory
 
-    init(_ title: String, subtitle: String, @ViewBuilder accessory: () -> Accessory = { EmptyView() }) {
+    init(_ title: LocalizedStringKey, subtitle: String, @ViewBuilder accessory: () -> Accessory = { EmptyView() }) {
+        self.init(title: Text(title), subtitle: subtitle, accessory: accessory)
+    }
+
+    /// A title already in the app language, or the user's own (a tag's name).
+    init(verbatim title: String, subtitle: String, @ViewBuilder accessory: () -> Accessory = { EmptyView() }) {
+        self.init(title: Text(verbatim: title), subtitle: subtitle, accessory: accessory)
+    }
+
+    private init(title: Text, subtitle: String, accessory: () -> Accessory) {
         self.title = title
         self.subtitle = subtitle
         self.accessory = accessory()
@@ -110,11 +119,11 @@ struct PageHeader<Accessory: View>: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                title
                     .font(Theme.pageTitle)
                     .lineLimit(1)
                 if !subtitle.isEmpty {
-                    Text(subtitle)
+                    Text(verbatim: subtitle)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -152,18 +161,24 @@ extension View {
 
 /// A titled group on a panel: a quiet heading over a soft card, used by the details panel and Settings.
 struct PanelSection<Content: View>: View {
-    let title: String?
+    let title: Text?
     @ViewBuilder let content: Content
 
-    init(_ title: String? = nil, @ViewBuilder content: () -> Content) {
-        self.title = title
+    init(_ title: LocalizedStringKey? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title.map { Text($0) }
+        self.content = content()
+    }
+
+    /// A title already in the app language.
+    init(verbatim title: String, @ViewBuilder content: () -> Content) {
+        self.title = Text(verbatim: title)
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let title {
-                Text(title)
+                title
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.leading, 4)

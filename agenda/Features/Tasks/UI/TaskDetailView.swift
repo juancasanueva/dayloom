@@ -68,7 +68,7 @@ struct TaskDetailView: View {
             Button("Delete Task", role: .destructive, action: deleteTask)
         } message: {
             let subtasks = task.subtasks?.count ?? 0
-            Text(subtasks > 0 ? "Its \(subtasks) subtask\(subtasks == 1 ? "" : "s") will be deleted too. You can't undo this." : "You can't undo this.")
+            Text(subtasks > 0 ? "Its \(subtasks) subtasks will be deleted too. You can't undo this." : "You can't undo this.")
         }
     }
 
@@ -128,7 +128,7 @@ struct TaskDetailView: View {
                 DetailRow("Duration") {
                     Picker("Duration", selection: $task.scheduledDuration) {
                         ForEach(Self.durations, id: \.self) { duration in
-                            Text(Duration.seconds(duration).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated)))
+                            Text(Duration.seconds(duration).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated).locale(.app)))
                                 .tag(duration)
                         }
                     }
@@ -254,7 +254,7 @@ struct TaskDetailView: View {
     }
 
     private func createRow(
-        _ title: String,
+        _ title: LocalizedStringKey,
         service: String,
         isConfigured: Bool,
         create: @escaping () async throws -> MeetingLink
@@ -380,10 +380,10 @@ struct TaskDetailView: View {
 
 /// A label on the leading side and its control on the trailing side, inside a details section.
 private struct DetailRow<Control: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     @ViewBuilder let control: Control
 
-    init(_ title: String, @ViewBuilder control: () -> Control) {
+    init(_ title: LocalizedStringKey, @ViewBuilder control: () -> Control) {
         self.title = title
         self.control = control()
     }

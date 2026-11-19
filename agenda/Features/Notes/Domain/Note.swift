@@ -60,7 +60,7 @@ final class Note {
             .lazy
             .map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty }
-        return firstLine ?? "Untitled"
+        return firstLine ?? String(appLocalized: "Untitled")
     }
 
     /// All block text, used for search and previews.

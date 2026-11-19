@@ -136,10 +136,10 @@ struct NoteBlockRow: View {
     private var prompt: String {
         switch block.kind {
         case .text: isFocused ? "Type / for blocks" : ""
-        case .heading: "Heading"
-        case .bullet: "List item"
-        case .checklist: "To-do"
-        case .task: "Task name"
+        case .heading: String(appLocalized: "Heading")
+        case .bullet: String(appLocalized: "List item")
+        case .checklist: String(appLocalized: "To-do")
+        case .task: String(appLocalized: "Task name")
         case .divider, .event, .image: ""
         }
     }
@@ -351,7 +351,7 @@ private struct EventBlockView: View {
                 .fill(tint)
                 .frame(width: 3)
             VStack(alignment: .leading, spacing: 2) {
-                Text(block.text.isEmpty ? "Event" : block.text)
+                Text(block.text.isEmpty ? String(appLocalized: "Event") : block.text)
                     .fontWeight(.medium)
                     .strikethrough(isUnavailable)
                 Text(timeText)
@@ -384,9 +384,9 @@ private struct EventBlockView: View {
         guard let start = block.eventStart else { return "" }
         let day = DayFormatting.relativeTitle(for: start)
         if block.eventIsAllDay { return "\(day) · All day" }
-        let from = start.formatted(date: .omitted, time: .shortened)
+        let from = start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
         guard let end = block.eventEnd else { return "\(day) · \(from)" }
-        return "\(day) · \(from) – \(end.formatted(date: .omitted, time: .shortened))"
+        return "\(day) · \(from) – \(end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)))"
     }
 
     /// Without calendar access the snapshot is all there is, so it isn't marked unavailable.

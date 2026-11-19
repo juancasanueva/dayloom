@@ -65,9 +65,9 @@ struct EventPickerSheet: View {
     }
 
     private func timeText(_ event: CalendarEntry) -> String {
-        if event.isAllDay { return "All day" }
-        let from = event.start.formatted(date: .omitted, time: .shortened)
-        let to = event.end.formatted(date: .omitted, time: .shortened)
+        if event.isAllDay { return String(appLocalized: "All day") }
+        let from = event.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
+        let to = event.end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
         let calendar = event.calendarName.map { " · \($0)" } ?? ""
         return "\(from) – \(to)\(calendar)"
     }

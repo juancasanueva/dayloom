@@ -76,7 +76,7 @@ enum ShortcutKey: Hashable {
         case .right: "→"
         case .up: "↑"
         case .down: "↓"
-        case .space: "Space"
+        case .space: String(appLocalized: "Space")
         case .returnKey: "↩"
         case .escape: "⎋"
         case .tab: "⇥"
@@ -143,6 +143,16 @@ enum ShortcutGroup: String, CaseIterable, Identifiable {
     case notes = "Notes"
 
     var id: Self { self }
+
+    /// The group's heading in the Shortcuts tab; keys.toml uses the raw value.
+    var title: String {
+        switch self {
+        case .general: String(appLocalized: "General")
+        case .goTo: String(appLocalized: "Go To")
+        case .calendar: String(appLocalized: "Calendar")
+        case .notes: String(appLocalized: "Notes")
+        }
+    }
 }
 
 /// Everything a shortcut can do. The raw value is the action's name in keys.toml.
@@ -166,25 +176,30 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
 
     var id: Self { self }
 
-    /// What the shortcut does, in a few words.
+    /// What the shortcut does, in a few words, in the app language.
     var summary: String {
+        summary(bundle: AppLocalization.shared.bundle)
+    }
+
+    /// What the shortcut does, in the language of `bundle`.
+    func summary(bundle: Bundle) -> String {
         switch self {
-        case .newTask: "New task"
-        case .newNote: "New note"
-        case .quickLauncher: "Quick Launcher"
-        case .quickLauncherAnywhere: "Quick Launcher from any app"
-        case .toggleInspector: "Show or hide the inspector"
-        case .goCalendar: "Calendar"
-        case .goInbox: "Inbox"
-        case .goToday: "Today"
-        case .goUpcoming: "Upcoming"
-        case .goCompleted: "Completed"
-        case .goHabits: "Habits"
-        case .goNotes: "Notes"
-        case .calendarToday: "Back to today"
-        case .calendarPrevious: "Previous day, week or month"
-        case .calendarNext: "Next day, week or month"
-        case .searchNotes: "Search notes"
+        case .newTask: String(appLocalized: "New task", bundle: bundle)
+        case .newNote: String(appLocalized: "New note", bundle: bundle)
+        case .quickLauncher: String(appLocalized: "Quick Launcher", bundle: bundle)
+        case .quickLauncherAnywhere: String(appLocalized: "Quick Launcher from any app", bundle: bundle)
+        case .toggleInspector: String(appLocalized: "Show or hide the inspector", bundle: bundle)
+        case .goCalendar: String(appLocalized: "Calendar", bundle: bundle)
+        case .goInbox: String(appLocalized: "Inbox", bundle: bundle)
+        case .goToday: String(appLocalized: "Today", bundle: bundle)
+        case .goUpcoming: String(appLocalized: "Upcoming", bundle: bundle)
+        case .goCompleted: String(appLocalized: "Completed", bundle: bundle)
+        case .goHabits: String(appLocalized: "Habits", bundle: bundle)
+        case .goNotes: String(appLocalized: "Notes", bundle: bundle)
+        case .calendarToday: String(appLocalized: "Back to today", bundle: bundle)
+        case .calendarPrevious: String(appLocalized: "Previous day, week or month", bundle: bundle)
+        case .calendarNext: String(appLocalized: "Next day, week or month", bundle: bundle)
+        case .searchNotes: String(appLocalized: "Search notes", bundle: bundle)
         }
     }
 

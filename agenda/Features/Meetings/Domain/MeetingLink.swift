@@ -15,7 +15,7 @@ enum MeetingProvider: String, CaseIterable, Hashable {
         case .zoom: "Zoom"
         case .teams: "Teams"
         case .webex: "Webex"
-        case .other: "Video Call"
+        case .other: String(appLocalized: "Video Call")
         }
     }
 
@@ -57,7 +57,7 @@ struct MeetingLink: Hashable {
         self.provider = MeetingProvider(host: host)
     }
 
-    var joinTitle: String { provider == .other ? "Join Call" : "Join \(provider.name)" }
+    var joinTitle: String { provider == .other ? String(appLocalized: "Join Call") : String(appLocalized: "Join \(provider.name)") }
 
     /// The first link to a known service in an event's text, such as its URL, location or notes.
     /// Ordinary links, like a shared document, are not meetings.

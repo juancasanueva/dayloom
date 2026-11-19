@@ -60,14 +60,14 @@ final class ShortcutStore {
             problem = nil
         } catch {
             config = .defaults
-            problem = "Dayloom couldn't use \(fileURL.path): \(error.localizedDescription) The default shortcuts apply."
+            problem = String(appLocalized: "Dayloom couldn't use \(fileURL.path): \(error.localizedDescription) The default shortcuts apply.")
         }
     }
 
     /// Records whether the system-wide shortcut could be registered.
     func reportSystemWideShortcut(registered: Bool) {
         let shortcut = shortcut(for: .quickLauncherAnywhere).displayText
-        systemWideProblem = registered ? nil : "\(shortcut) couldn't be set up as the system-wide shortcut, probably because another app already uses it. Choose other keys for quick_launcher_anywhere."
+        systemWideProblem = registered ? nil : String(appLocalized: "\(shortcut) couldn't be set up as the system-wide shortcut, probably because another app already uses it. Choose other keys for quick_launcher_anywhere.")
     }
 
     /// A path with the home folder written as ~.

@@ -127,9 +127,9 @@ private struct EventDetails: View {
 
     private var timeDescription: String {
         if entry.isAllDay {
-            return "\(entry.start.formatted(date: .abbreviated, time: .omitted)) · All day"
+            return String(appLocalized: "\(entry.start.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(.app))) · All day")
         }
         let range = entry.start..<entry.end
-        return range.formatted(.interval.weekday().month(.abbreviated).day().hour().minute())
+        return range.formatted(.interval.weekday().month(.abbreviated).day().hour().minute().locale(.app))
     }
 }

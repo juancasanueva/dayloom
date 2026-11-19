@@ -12,8 +12,8 @@ enum CalendarWriteError: Error, Equatable, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .accessDenied: "Calendar access is needed to add events."
-        case .readOnlyCalendar: "The default calendar doesn't accept new events."
+        case .accessDenied: String(appLocalized: "Calendar access is needed to add events.")
+        case .readOnlyCalendar: String(appLocalized: "The default calendar doesn't accept new events.")
         }
     }
 }

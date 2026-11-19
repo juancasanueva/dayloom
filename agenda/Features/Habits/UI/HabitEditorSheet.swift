@@ -32,7 +32,7 @@ struct HabitEditorSheet: View {
     @State private var isConfirmingDelete = false
     @FocusState private var isNameFocused: Bool
 
-    private let calendar = Calendar.current
+    private let calendar = Calendar.app
 
     static let symbols = [
         "checkmark", "drop.fill", "figure.walk", "figure.run", "dumbbell.fill", "bed.double.fill",
@@ -124,7 +124,7 @@ struct HabitEditorSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(isNew ? "New Habit" : "Edit Habit")
                     .font(Theme.sectionTitle)
-                Text(trimmedName.isEmpty ? "A routine to keep, one day at a time" : trimmedName)
+                Text(trimmedName.isEmpty ? String(appLocalized: "A routine to keep, one day at a time") : trimmedName)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -249,10 +249,10 @@ struct HabitEditorSheet: View {
 
 /// A small caption over a group of fields in the editor.
 private struct EditorSection<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     @ViewBuilder let content: Content
 
-    init(_ title: String, @ViewBuilder content: () -> Content) {
+    init(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
     }

@@ -20,7 +20,7 @@ struct MonthGrid: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(days.prefix(7), id: \.self) { day in
-                    Text(day.formatted(.dateTime.weekday(.abbreviated)))
+                    Text(day.formatted(.dateTime.weekday(.abbreviated).locale(.app)))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -76,7 +76,7 @@ private struct MonthDayCell: View {
             Button {
                 onOpenDay(day)
             } label: {
-                Text(day.formatted(.dateTime.day()))
+                Text(day.formatted(.dateTime.day().locale(.app)))
                     .font(.callout.weight(isToday ? .bold : .medium))
                     .foregroundStyle(isToday ? Color.white : (isInMonth ? Color.primary : Color.secondary))
                     .frame(minWidth: 24, minHeight: 24)
@@ -85,7 +85,7 @@ private struct MonthDayCell: View {
             }
             .buttonStyle(.plain)
             .help("Show this week")
-            .accessibilityLabel(day.formatted(date: .complete, time: .omitted))
+            .accessibilityLabel(day.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(.app)))
             .accessibilityHint("Shows this week")
 
             ForEach(entries.prefix(Self.visibleEntries)) { entry in
@@ -107,7 +107,7 @@ private struct MonthDayCell: View {
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { onCreateTask(day) }
         .contextMenu {
-            Button("New Task on \(day.formatted(.dateTime.day().month(.abbreviated)))", systemImage: "plus") { onCreateTask(day) }
+            Button("New Task on \(day.formatted(.dateTime.day().month(.abbreviated).locale(.app)))", systemImage: "plus") { onCreateTask(day) }
             Button("Show Week", systemImage: "calendar") { onOpenDay(day) }
         }
         .accessibilityElement(children: .contain)
@@ -132,10 +132,10 @@ private struct MonthEntryRow: View {
                 Circle().fill(tint).frame(width: 6, height: 6)
             }
             if !entry.isAllDay {
-                Text(entry.start.formatted(date: .omitted, time: .shortened))
+                Text(entry.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)))
                     .foregroundStyle(.secondary)
             }
-            Text(entry.title.isEmpty ? "Untitled" : entry.title)
+            Text(entry.title.isEmpty ? String(appLocalized: "Untitled") : entry.title)
                 .strikethrough(entry.isCompletedTask)
                 .foregroundStyle(entry.isCompletedTask ? .secondary : .primary)
         }

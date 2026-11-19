@@ -24,7 +24,7 @@ struct WeekView: View {
 
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
-                PageHeader(title(for: days), subtitle: subtitle(for: days, count: entries.count)) {
+                PageHeader(verbatim: title(for: days), subtitle: subtitle(for: days, count: entries.count)) {
                     HStack(spacing: 10) {
                         Picker("View", selection: $storedScope) {
                             ForEach(CalendarScope.allCases) { Text($0.title).tag($0) }
@@ -111,25 +111,25 @@ struct WeekView: View {
 
     private func title(for days: [Date]) -> String {
         switch model.scope {
-        case .day: return model.anchor.formatted(.dateTime.month(.wide).day().year())
-        case .month: return model.anchor.formatted(.dateTime.month(.wide).year())
+        case .day: return model.anchor.formatted(.dateTime.month(.wide).day().year().locale(.app))
+        case .month: return model.anchor.formatted(.dateTime.month(.wide).year().locale(.app))
         case .week: break
         }
-        guard let first = days.first, let last = days.last else { return "Calendar" }
+        guard let first = days.first, let last = days.last else { return String(appLocalized: "Calendar") }
         let calendar = Calendar.current
         if calendar.isDate(first, equalTo: last, toGranularity: .month) {
-            return first.formatted(.dateTime.month(.wide).year())
+            return first.formatted(.dateTime.month(.wide).year().locale(.app))
         }
-        return "\(first.formatted(.dateTime.month(.abbreviated))) – \(last.formatted(.dateTime.month(.abbreviated).year()))"
+        return "\(first.formatted(.dateTime.month(.abbreviated).locale(.app))) – \(last.formatted(.dateTime.month(.abbreviated).year().locale(.app)))"
     }
 
     /// The visible days, such as "Nov 16 – 22" or "Wednesday", and how much is on them.
     private func subtitle(for days: [Date], count: Int) -> String {
-        let summary = count == 0 ? "Nothing scheduled" : "\(count) scheduled"
+        let summary = count == 0 ? String(appLocalized: "Nothing scheduled") : String(appLocalized: "\(count) scheduled")
         guard let first = days.first, let last = days.last else { return summary }
         switch model.scope {
-        case .day: return "\(first.formatted(.dateTime.weekday(.wide))) · \(summary)"
-        case .week: return "\((first..<last).formatted(.interval.month(.abbreviated).day())) · \(summary)"
+        case .day: return "\(first.formatted(.dateTime.weekday(.wide).locale(.app))) · \(summary)"
+        case .week: return "\((first..<last).formatted(.interval.month(.abbreviated).day().locale(.app))) · \(summary)"
         case .month: return summary
         }
     }
@@ -139,7 +139,7 @@ struct WeekView: View {
     }
 
     private func createTask(at start: Date) {
-        let task = TaskItem(title: "New Task", scheduledStart: start)
+        let task = TaskItem(title: String(appLocalized: "New Task"), scheduledStart: start)
         modelContext.insert(task)
         try? modelContext.save() // Swap the temporary ID for a permanent one before selecting it.
         appState.select(task: task.persistentModelID)
@@ -155,23 +155,47 @@ private struct WeekNavigationControls: View {
     var onToday: () -> Void
     var onNext: () -> Void
 
+    // Whole phrases per scope rather than "Next \(unit)": other languages inflect the unit.
+    private var todayHelp: String {
+        switch scope {
+        case .day: String(appLocalized: "Go to Today")
+        case .week: String(appLocalized: "Go to This Week")
+        case .month: String(appLocalized: "Go to This Month")
+        }
+    }
+
+    private var previousTitle: String {
+        switch scope {
+        case .day: String(appLocalized: "Previous Day")
+        case .week: String(appLocalized: "Previous Week")
+        case .month: String(appLocalized: "Previous Month")
+        }
+    }
+
+    private var nextTitle: String {
+        switch scope {
+        case .day: String(appLocalized: "Next Day")
+        case .week: String(appLocalized: "Next Week")
+        case .month: String(appLocalized: "Next Month")
+        }
+    }
+
     var body: some View {
-        let unit = scope.title
         let shortcuts = ShortcutStore.shared
 
         HStack(spacing: 6) {
             Button("Today", action: onToday)
                 .keyboardShortcut(for: .calendarToday)
-                .help("\(scope == .day ? "Go to Today" : "Go to This \(unit)") (\(shortcuts.shortcut(for: .calendarToday).displayText))")
+                .help("\(todayHelp) (\(shortcuts.shortcut(for: .calendarToday).displayText))")
                 .buttonStyle(PageControlStyle(horizontalPadding: 12))
 
             HStack(spacing: 2) {
-                Button("Previous \(unit)", systemImage: "chevron.left", action: onPrevious)
+                Button(previousTitle, systemImage: "chevron.left", action: onPrevious)
                     .keyboardShortcut(for: .calendarPrevious)
-                    .help("Previous \(unit) (\(shortcuts.shortcut(for: .calendarPrevious).displayText))")
-                Button("Next \(unit)", systemImage: "chevron.right", action: onNext)
+                    .help("\(previousTitle) (\(shortcuts.shortcut(for: .calendarPrevious).displayText))")
+                Button(nextTitle, systemImage: "chevron.right", action: onNext)
                     .keyboardShortcut(for: .calendarNext)
-                    .help("Next \(unit) (\(shortcuts.shortcut(for: .calendarNext).displayText))")
+                    .help("\(nextTitle) (\(shortcuts.shortcut(for: .calendarNext).displayText))")
             }
             .labelStyle(.iconOnly)
             .buttonStyle(PageControlStyle(horizontalPadding: 9))
@@ -223,7 +247,9 @@ private struct WeekDayLabel: View {
         .padding(.top, 8)
         .padding(.bottom, 10)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isToday ? "Today, \(day.formatted(date: .complete, time: .omitted))" : day.formatted(date: .complete, time: .omitted))
+        .accessibilityLabel(isToday
+                ? String(appLocalized: "Today, \(day.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(.app)))")
+                : day.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(.app)))
         .accessibilityAddTraits(.isHeader)
     }
 }
@@ -323,7 +349,7 @@ private struct DayColumn: View {
                     }
                     .overlay {
                         SlotMenuArea(
-                            title: { y in "New Task at \(startDate(forY: y).formatted(date: .omitted, time: .shortened))" },
+                            title: { y in "New Task at \(startDate(forY: y).formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)))" },
                             action: { y in onCreateTask(startDate(forY: y)) }
                         )
                     }
@@ -421,7 +447,7 @@ private struct NowTimeLabel: View {
                 .background(NowStyle.color, in: Capsule())
                 .offset(x: -4, y: CGFloat(minutes) / 60 * WeekGridMetrics.hourHeight - 8)
                 .allowsHitTesting(false)
-                .accessibilityLabel("Now, \(context.date.formatted(date: .omitted, time: .shortened))")
+                .accessibilityLabel("Now, \(context.date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)))")
         }
     }
 }

@@ -20,16 +20,16 @@ struct SidebarView: View {
 
         List(selection: $appState.selection) {
             Section {
-                row("Calendar", systemImage: "calendar", for: .calendar)
-                row("Habits", systemImage: "flame", for: .habits)
-                row("Notes", systemImage: "note.text", for: .notes)
+                row(String(appLocalized: "Calendar"), systemImage: "calendar", for: .calendar)
+                row(String(appLocalized: "Habits"), systemImage: "flame", for: .habits)
+                row(String(appLocalized: "Notes"), systemImage: "note.text", for: .notes)
             }
 
             Section {
-                row("Inbox", systemImage: "tray", for: .tasks(.inbox), count: query.tasks(from: allTasks, in: .inbox).count)
-                row("Today", systemImage: "sun.max", for: .tasks(.today), count: query.tasks(from: allTasks, in: .today).count)
-                row("Upcoming", systemImage: "calendar.badge.clock", for: .tasks(.upcoming))
-                row("Completed", systemImage: "checkmark.circle", for: .tasks(.completed))
+                row(String(appLocalized: "Inbox"), systemImage: "tray", for: .tasks(.inbox), count: query.tasks(from: allTasks, in: .inbox).count)
+                row(String(appLocalized: "Today"), systemImage: "sun.max", for: .tasks(.today), count: query.tasks(from: allTasks, in: .today).count)
+                row(String(appLocalized: "Upcoming"), systemImage: "calendar.badge.clock", for: .tasks(.upcoming))
+                row(String(appLocalized: "Completed"), systemImage: "checkmark.circle", for: .tasks(.completed))
             } header: {
                 SidebarHeader("Tasks")
             }
@@ -72,6 +72,7 @@ struct SidebarView: View {
         }
     }
 
+    /// - Parameter title: In the app language already, or the user's own (a tag's name).
     private func row(
         _ title: String, systemImage: String, for selection: SidebarSelection, count: Int = 0, iconColor: Color? = nil
     ) -> some View {
@@ -214,9 +215,9 @@ private struct SystemSelectionHidden: NSViewRepresentable {
 
 /// A quiet section heading, softer than the system's.
 private struct SidebarHeader: View {
-    let title: String
+    let title: LocalizedStringKey
 
-    init(_ title: String) {
+    init(_ title: LocalizedStringKey) {
         self.title = title
     }
 
@@ -254,8 +255,8 @@ private struct SidebarFooterButtonStyle: ButtonStyle {
 
 /// Asks for a tag's name, with the cursor already in the field.
 private struct TagNameSheet: View {
-    let title: String
-    let actionTitle: String
+    let title: LocalizedStringKey
+    let actionTitle: LocalizedStringKey
     @Binding var name: String
     var onSave: () -> Void
 
