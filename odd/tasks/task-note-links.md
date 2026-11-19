@@ -14,8 +14,8 @@ Delivery: ask-on-risk (forecast ~350 authored lines, string catalog excluded). T
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
-| T1 | S1, S3, S4 | inline (model, domain, merger, tests) | done (RED: missing API; merger test fails without the fix) | see L4 |
-| T2 | S1–S3 | inline (Linked Notes section, note picker, navigation, strings) | open | |
+| T1 | S1, S3, S4 | inline (model, domain, merger, tests) | done (RED: missing API; merger test fails without the fix; review approved) | d901e41 |
+| T2 | S1–S3 | inline (Linked Notes section, note picker, navigation, strings) | done (checked by the user in the Debug build) | see L6 |
 
 ## Log
 
@@ -23,3 +23,5 @@ Delivery: ask-on-risk (forecast ~350 authored lines, string catalog excluded). T
 - L2 (2026-11-19) Asked whether notes that already contain the task as a block should show up too. User: "both, show them automatically too"
 - L3 Exploration: `TaskItem.noteBlocks` already records task blocks in notes but no UI shows it. `AppState.selectedNoteID` drives the Notes screen; changing `selection` clears the task inspector. `TaskPickerSheet` is the pattern for the note picker; `NoteQuery.notes(from:matching:)` is the existing note search. `Tag` ↔ `TaskItem` is the many-to-many precedent for CloudKit. Risk: item 1 (persisted format: new relationship) — needs the CloudKit production schema deployed before release.
 - L4 T1: `TaskItem.linkedNotes` ↔ `Note.linkedTasks`, `TaskItem.relatedNotes` / `link` / `unlink` / `linkableNotes` (TaskNoteLinks.swift, ordered with `NoteQuery`), `AppState.open(note:)`, daily-note merge moves links. 397 tests pass. Commit: `feat(tasks): link notes to tasks`.
+- L5 Review of d901e41 (risk + reliability lenses): approved and acknowledged; one informational note (the merge test compares links by `mergeKey`).
+- L6 (2026-11-19) T2: Linked Notes section in task details (`LinkedNoteRow`, `NotePickerSheet` in LinkedNotes.swift), 8 new strings in eight languages, README. 397 tests pass. User, after running the Debug build: "it works. commit". Pending before release: deploy the CloudKit production schema (new relationship).

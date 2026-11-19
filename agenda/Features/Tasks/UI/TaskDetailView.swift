@@ -42,6 +42,7 @@ struct TaskDetailView: View {
     @State private var isCreatingMeeting = false
     @State private var meetingError: String?
     @State private var showsTeamsHint = false
+    @State private var isPickingNote = false
 
     private static let durations: [TimeInterval] = [15, 30, 45, 60, 90, 120, 180, 240].map { $0 * 60 }
 
@@ -58,6 +59,7 @@ struct TaskDetailView: View {
 
                 tagsSection
                 subtasksSection
+                linkedNotesSection
                 notesSection
                 deleteButton
             }
@@ -69,6 +71,9 @@ struct TaskDetailView: View {
         } message: {
             let subtasks = task.subtasks?.count ?? 0
             Text(subtasks > 0 ? "Its \(subtasks) subtasks will be deleted too. You can't undo this." : "You can't undo this.")
+        }
+        .sheet(isPresented: $isPickingNote) {
+            NotePickerSheet(task: task) { task.link($0) }
         }
     }
 
@@ -185,6 +190,33 @@ struct TaskDetailView: View {
                     .textFieldStyle(.plain)
                     .onSubmit(addSubtask)
             }
+        }
+    }
+
+    /// Notes linked by hand and notes that hold the task; clicking one opens it in Notes.
+    private var linkedNotesSection: some View {
+        PanelSection("Linked Notes") {
+            ForEach(task.relatedNotes) { related in
+                LinkedNoteRow(related: related) {
+                    try? modelContext.save() // Swap a temporary ID for a permanent one before selecting it.
+                    appState.open(note: related.note.persistentModelID)
+                } unlink: {
+                    task.unlink(related.note)
+                }
+            }
+            Button {
+                isPickingNote = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus")
+                        .frame(width: 20)
+                    Text("Link Note…")
+                }
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 
