@@ -61,13 +61,13 @@ enum MeetingServiceError: Error, Equatable, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured(let service): "\(service) sign-in isn't set up in this build."
+        case .notConfigured(let service): String(appLocalized: "\(service) sign-in isn't set up in this build.")
         case .signInCancelled: String(appLocalized: "Sign-in was cancelled.")
-        case .signInFailed(let service, let reason): "\(service) sign-in failed (\(reason))."
+        case .signInFailed(let service, let reason): String(appLocalized: "\(service) sign-in failed (\(reason)).")
         case .signInSheetFailed(let reason): String(appLocalized: "The sign-in sheet failed (\(reason)).")
-        case .stateMismatch(let service): "\(service) sign-in couldn't be verified. Try again."
-        case .requestFailed(let service, let status): "\(service) couldn't create the meeting (error \(status))."
-        case .invalidResponse(let service): "\(service) sent an unexpected reply."
+        case .stateMismatch(let service): String(appLocalized: "\(service) sign-in couldn't be verified. Try again.")
+        case .requestFailed(let service, let status): String(appLocalized: "\(service) couldn't create the meeting (error \(status)).")
+        case .invalidResponse(let service): String(appLocalized: "\(service) sent an unexpected reply.")
         }
     }
 }

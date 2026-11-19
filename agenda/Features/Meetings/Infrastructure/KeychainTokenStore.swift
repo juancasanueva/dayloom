@@ -54,6 +54,6 @@ struct KeychainError: Error, LocalizedError {
 
     var errorDescription: String? {
         let message = SecCopyErrorMessageString(status, nil) as String? ?? "status \(status)"
-        return "Couldn't save the \(serviceName) sign-in to the Keychain: \(message)."
+        return String(appLocalized: "Couldn't save the \(serviceName) sign-in to the Keychain: \(message).")
     }
 }

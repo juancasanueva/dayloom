@@ -50,8 +50,8 @@ private struct MeetingAccountRow: View {
 
     private var detail: String {
         let service = session.serviceName
-        if !session.isConfigured { return "\(service) sign-in isn't set up in this build." }
-        if session.isConnected { return "Signed in. New meetings are created with your \(service) account." }
-        return "Not connected. You'll sign in to \(service) the first time you create a meeting."
+        if !session.isConfigured { return String(appLocalized: "\(service) sign-in isn't set up in this build.") }
+        if session.isConnected { return String(appLocalized: "Signed in. New meetings are created with your \(service) account.") }
+        return String(appLocalized: "Not connected. You'll sign in to \(service) the first time you create a meeting.")
     }
 }
