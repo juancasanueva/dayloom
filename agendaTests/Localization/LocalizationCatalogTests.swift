@@ -50,6 +50,33 @@ struct LocalizationCatalogTests {
         }
     }
 
+    /// The video-call account status and errors are built in code, so they need catalog entries.
+    @Test func videoCallMessagesAreTranslated() {
+        let bundle = AppLocalization.bundle(for: .spanish)
+        let locale = AppLanguage.spanish.locale
+        let service = "Zoom"
+        let status = 401
+        let reason = "x"
+        let messages = [
+            String(appLocalized: "Signed in. New meetings are created with your \(service) account.", bundle: bundle, locale: locale),
+            String(appLocalized: "Not connected. You'll sign in to \(service) the first time you create a meeting.", bundle: bundle, locale: locale),
+            String(appLocalized: "\(service) sign-in failed (\(reason)).", bundle: bundle, locale: locale),
+            String(appLocalized: "\(service) sign-in couldn't be verified. Try again.", bundle: bundle, locale: locale),
+            String(appLocalized: "\(service) couldn't create the meeting (error \(status)).", bundle: bundle, locale: locale),
+            String(appLocalized: "\(service) sent an unexpected reply.", bundle: bundle, locale: locale),
+            String(appLocalized: "Couldn't save the \(service) sign-in to the Keychain: \(reason).", bundle: bundle, locale: locale),
+        ]
+        #expect(messages == [
+            "Sesión iniciada. Las reuniones nuevas se crean con tu cuenta de Zoom.",
+            "Sin conectar. Iniciarás sesión en Zoom la primera vez que crees una reunión.",
+            "Error al iniciar sesión en Zoom (x).",
+            "No se pudo verificar el inicio de sesión en Zoom. Inténtalo de nuevo.",
+            "Zoom no pudo crear la reunión (error 401).",
+            "Zoom envió una respuesta inesperada.",
+            "No se pudo guardar el inicio de sesión de Zoom en el llavero: x.",
+        ])
+    }
+
     @Test("Strings resolve in each language", arguments: AppLanguage.allCases)
     func resolvesInEachLanguage(language: AppLanguage) {
         let bundle = AppLocalization.bundle(for: language)
