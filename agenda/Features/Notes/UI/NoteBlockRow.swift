@@ -26,6 +26,7 @@ struct NoteBlockRow: View {
     @State private var selection: TextSelection?
     @State private var highlightedCommand = 0
     @State private var isSlashMenuDismissed = false
+    @State private var isHovered = false
 
     private var isFocused: Bool { focus.wrappedValue == block.objectID }
 
@@ -38,8 +39,18 @@ struct NoteBlockRow: View {
                 }
             }
         }
+        // The whole row answers a right-click, not just its drawn pixels: a divider is one point tall.
+        .contentShape(Rectangle())
         .contextMenu { blockMenu }
         .onDrop(of: NoteImageSource.dropTypes, isTargeted: nil) { perform(.dropImages($0)) }
+        // Text fields keep right-click for their own editing menu, so a handle in the left margin
+        // reaches the block menu on every kind. The margin counts as part of the block for hover,
+        // so the pointer can travel to the handle without hiding it.
+        .padding(.leading, Self.gutterWidth)
+        .overlay(alignment: .topLeading) { handle }
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
+        .padding(.leading, -Self.gutterWidth)
         .onChange(of: block.text) {
             highlightedCommand = 0
             if SlashCommand.query(in: block.text) == nil {
@@ -178,6 +189,40 @@ struct NoteBlockRow: View {
             .font(font)
             .focused(focus, equals: block.objectID)
             .onKeyPress(phases: .down) { handleKey($0) }
+    }
+
+    /// Shown in the left margin while the pointer is over the block.
+    private var handle: some View {
+        Menu {
+            blockMenu
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 20, height: 20)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel("Block Options")
+        .help("Block Options")
+        .offset(y: handleTop)
+        .opacity(isHovered ? 1 : 0)
+        .allowsHitTesting(isHovered)
+    }
+
+    /// The margin left of the block that holds the handle.
+    private static let gutterWidth: CGFloat = 28
+
+    /// Lines the handle up with the block's first line.
+    private var handleTop: CGFloat {
+        switch block.kind {
+        case .heading: 18
+        case .divider: 2
+        case .image, .event: 6
+        case .text, .bullet, .checklist, .task: block.task == nil ? -1 : 5
+        }
     }
 
     @ViewBuilder
