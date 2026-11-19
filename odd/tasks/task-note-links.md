@@ -15,7 +15,7 @@ Delivery: ask-on-risk (forecast ~350 authored lines, string catalog excluded). T
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
 | T1 | S1, S3, S4 | inline (model, domain, merger, tests) | done (RED: missing API; merger test fails without the fix; review approved) | d901e41 |
-| T2 | S1–S3 | inline (Linked Notes section, note picker, navigation, strings) | done (checked by the user in the Debug build) | see L6 |
+| T2 | S1–S3 | inline (Linked Notes section, note picker, navigation, strings) | done (checked by the user in the Debug build) | d84e438 |
 
 ## Log
 
@@ -25,3 +25,4 @@ Delivery: ask-on-risk (forecast ~350 authored lines, string catalog excluded). T
 - L4 T1: `TaskItem.linkedNotes` ↔ `Note.linkedTasks`, `TaskItem.relatedNotes` / `link` / `unlink` / `linkableNotes` (TaskNoteLinks.swift, ordered with `NoteQuery`), `AppState.open(note:)`, daily-note merge moves links. 397 tests pass. Commit: `feat(tasks): link notes to tasks`.
 - L5 Review of d901e41 (risk + reliability lenses): approved and acknowledged; one informational note (the merge test compares links by `mergeKey`).
 - L6 (2026-11-19) T2: Linked Notes section in task details (`LinkedNoteRow`, `NotePickerSheet` in LinkedNotes.swift), 8 new strings in eight languages, README. 397 tests pass. User, after running the Debug build: "it works. commit". Pending before release: deploy the CloudKit production schema (new relationship).
+- L7 (2026-11-19) User: "it works, commit, merge PR and release v1.0.7"; asked about scope, user chose "Fix + linked notes" (CloudKit production schema already deployed). Merged main (video-call translations, PR #8) into the branch; catalog conflict resolved by adding main's 7 keys; 398 tests pass. Delivered as one PR, released in 1.0.7.
