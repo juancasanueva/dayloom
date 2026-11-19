@@ -130,9 +130,9 @@ private struct BoardColumnView<CardMenu: View>: View {
 
     private var placeholder: String {
         switch column.status {
-        case .todo: "Nothing to start"
-        case .inProgress: "Drag a card here when you start it"
-        case .done: "Tasks finished in the last week show up here"
+        case .todo: String(appLocalized: "Nothing to start")
+        case .inProgress: String(appLocalized: "Drag a card here when you start it")
+        case .done: String(appLocalized: "Tasks finished in the last week show up here")
         }
     }
 }

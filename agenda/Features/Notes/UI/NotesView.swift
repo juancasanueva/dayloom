@@ -222,10 +222,10 @@ struct NotesView: View {
 /// The short line under the Notes title: how many notes there are, and how many are pinned.
 enum NotesHeading {
     static func subtitle(for notes: [Note]) -> String {
-        guard !notes.isEmpty else { return "No notes yet" }
-        let count = notes.count == 1 ? "1 note" : "\(notes.count) notes"
+        guard !notes.isEmpty else { return String(appLocalized: "No notes yet") }
+        let count = String(appLocalized: "\(notes.count) notes")
         let pinned = notes.filter(\.isPinned).count
-        return pinned == 0 ? count : "\(count) · \(pinned) pinned"
+        return pinned == 0 ? count : String(appLocalized: "\(count) · \(pinned) pinned")
     }
 }
 

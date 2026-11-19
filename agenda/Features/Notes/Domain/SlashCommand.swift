@@ -16,15 +16,15 @@ enum SlashCommand: CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .text: "Text"
-        case .heading: "Heading"
-        case .bullet: "Bulleted List"
-        case .checklist: "Checklist"
-        case .divider: "Divider"
-        case .task: "Task"
-        case .existingTask: "Existing Task"
-        case .event: "Calendar Event"
-        case .image: "Image"
+        case .text: String(appLocalized: "Text")
+        case .heading: String(appLocalized: "Heading")
+        case .bullet: String(appLocalized: "Bulleted List")
+        case .checklist: String(appLocalized: "Checklist")
+        case .divider: String(appLocalized: "Divider")
+        case .task: String(appLocalized: "Task")
+        case .existingTask: String(appLocalized: "Existing Task")
+        case .event: String(appLocalized: "Calendar Event")
+        case .image: String(appLocalized: "Image")
         }
     }
 

@@ -8,7 +8,7 @@ struct ShortcutSettingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             ForEach(ShortcutGroup.allCases) { group in
-                PanelSection(group.rawValue) {
+                PanelSection(verbatim: group.title) {
                     ForEach(ShortcutAction.allCases.filter { $0.group == group }) { action in
                         ShortcutRow(action: action, shortcut: store.shortcut(for: action))
                     }

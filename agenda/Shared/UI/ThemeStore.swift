@@ -12,9 +12,9 @@ enum AppearanceMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .system: "System"
-        case .light: "Light"
-        case .dark: "Dark"
+        case .system: String(appLocalized: "System")
+        case .light: String(appLocalized: "Light")
+        case .dark: String(appLocalized: "Dark")
         }
     }
 

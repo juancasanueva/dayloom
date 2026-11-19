@@ -10,9 +10,9 @@ enum CalendarScope: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .day: "Day"
-        case .week: "Week"
-        case .month: "Month"
+        case .day: String(appLocalized: "Day")
+        case .week: String(appLocalized: "Week")
+        case .month: String(appLocalized: "Month")
         }
     }
 }

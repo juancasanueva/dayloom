@@ -73,7 +73,7 @@ private struct TaskPickerRow: View {
             Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
-                Text(task.title.isEmpty ? "Untitled" : task.title)
+                Text(task.title.isEmpty ? String(appLocalized: "Untitled") : task.title)
                     .fontWeight(.medium)
                     .strikethrough(task.isDone)
                     .lineLimit(1)
@@ -93,7 +93,7 @@ private struct TaskPickerRow: View {
     }
 
     private var detail: String {
-        guard let due = task.dueDate else { return "Inbox" }
+        guard let due = task.dueDate else { return String(appLocalized: "Inbox") }
         return "Due \(DayFormatting.relativeTitle(for: due))"
     }
 }

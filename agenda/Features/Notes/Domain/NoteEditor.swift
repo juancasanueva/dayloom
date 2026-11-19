@@ -26,7 +26,7 @@ struct NoteEditor {
     }
 
     /// Finds or creates the note for the day containing `date`. With duplicates, the oldest wins.
-    func dailyNote(for date: Date, in context: ModelContext, locale: Locale = .current) -> Note {
+    func dailyNote(for date: Date, in context: ModelContext, locale: Locale = .app) -> Note {
         let start = calendar.startOfDay(for: date)
         let day: Date? = start
         let descriptor = FetchDescriptor<Note>(

@@ -13,7 +13,7 @@ struct BoardCardView: View {
             CompletionButton(task: task)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(task.title.isEmpty ? "Untitled" : task.title)
+                Text(task.title.isEmpty ? String(appLocalized: "Untitled") : task.title)
                     .fontWeight(.medium)
                     .strikethrough(task.isDone)
                     .foregroundStyle(task.isDone ? .secondary : .primary)
@@ -67,7 +67,7 @@ struct BoardCardView: View {
             if task.repeatRule.repeats {
                 Image(systemName: "repeat")
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Repeats \(task.repeatRule.title.lowercased())")
+                    .accessibilityLabel("Repeats \(task.repeatRule.phrase)")
             }
             let progress = task.subtaskProgress
             if progress.total > 0 {
@@ -98,7 +98,7 @@ struct BoardCardView: View {
 
     /// Cards have no day sections, so a start on another day names the day too.
     private func scheduleText(for start: Date) -> String {
-        let time = start.formatted(date: .omitted, time: .shortened)
+        let time = start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
         guard !Calendar.current.isDateInToday(start) else { return time }
         return "\(DayFormatting.relativeTitle(for: start)), \(time)"
     }

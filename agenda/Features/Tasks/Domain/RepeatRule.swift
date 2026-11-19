@@ -12,11 +12,22 @@ enum RepeatRule: String, CaseIterable, Codable, Identifiable {
 
     var title: String {
         switch self {
-        case .none: "Never"
-        case .daily: "Every Day"
-        case .weekdays: "Every Weekday"
-        case .weekly: "Every Week"
-        case .monthly: "Every Month"
+        case .none: String(appLocalized: "Never")
+        case .daily: String(appLocalized: "Every Day")
+        case .weekdays: String(appLocalized: "Every Weekday")
+        case .weekly: String(appLocalized: "Every Week")
+        case .monthly: String(appLocalized: "Every Month")
+        }
+    }
+
+    /// The rule inside a sentence, as in "Repeats every day".
+    var phrase: String {
+        switch self {
+        case .none: String(appLocalized: "never")
+        case .daily: String(appLocalized: "every day")
+        case .weekdays: String(appLocalized: "every weekday")
+        case .weekly: String(appLocalized: "every week")
+        case .monthly: String(appLocalized: "every month")
         }
     }
 

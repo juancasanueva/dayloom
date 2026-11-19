@@ -36,12 +36,14 @@ struct RootView: View {
                 LauncherPill { appState.isLauncherPresented = true }
             }
             ToolbarItem(placement: .primaryAction) {
+                let title = appState.isInspectorPresented
+                    ? String(appLocalized: "Hide Inspector") : String(appLocalized: "Show Inspector")
                 Button {
                     appState.isInspectorPresented.toggle()
                 } label: {
-                    Label(appState.isInspectorPresented ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.right")
+                    Label(title, systemImage: "sidebar.right")
                 }
-                .help("\(appState.isInspectorPresented ? "Hide Inspector" : "Show Inspector") (\(ShortcutStore.shared.shortcut(for: .toggleInspector).displayText))")
+                .help("\(title) (\(ShortcutStore.shared.shortcut(for: .toggleInspector).displayText))")
             }
         }
         .background { ReminderSync() }

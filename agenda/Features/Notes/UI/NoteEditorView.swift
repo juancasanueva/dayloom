@@ -109,7 +109,7 @@ struct NoteEditorView: View {
                     focusFirstBlock()
                     return .handled
                 }
-            Text("Edited \(note.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+            Text("Edited \(note.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(.app)))")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 18)

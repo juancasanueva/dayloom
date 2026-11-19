@@ -82,11 +82,11 @@ struct HabitsView: View {
 /// The short line under the Habits title: how today's check-ins are going.
 enum HabitsHeading {
     static func subtitle(for habits: [Habit], now: Date = .now, calendar: Calendar = .current) -> String {
-        guard !habits.isEmpty else { return "No habits yet" }
+        guard !habits.isEmpty else { return String(appLocalized: "No habits yet") }
         let due = habits.filter { $0.isScheduled(on: now, calendar: calendar) }
-        guard !due.isEmpty else { return "Nothing due today" }
+        guard !due.isEmpty else { return String(appLocalized: "Nothing due today") }
         let done = due.filter { $0.isCompleted(on: now, calendar: calendar) }.count
-        return done == due.count ? "All \(done) done today" : "\(done) of \(due.count) done today"
+        return done == due.count ? String(appLocalized: "All \(done) done today") : String(appLocalized: "\(done) of \(due.count) done today")
     }
 }
 
@@ -104,7 +104,7 @@ struct HabitRowView<Actions: View>: View {
             HabitIcon(habit: habit)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(habit.name.isEmpty ? "Untitled" : habit.name)
+                Text(habit.name.isEmpty ? String(appLocalized: "Untitled") : habit.name)
                     .fontWeight(.medium)
                     .lineLimit(1)
                 if let rate = habit.completionRate(asOf: now, calendar: calendar) {
@@ -182,7 +182,7 @@ private struct StreakBadge: View {
         .fixedSize()
         .frame(minWidth: 56, alignment: .trailing)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Streak: \(count) \(count == 1 ? "day" : "days")")
+        .accessibilityLabel("Streak: \(count) days")
     }
 }
 
@@ -228,7 +228,7 @@ private struct HabitDayButton: View {
             }
             .buttonStyle(.plain)
             .disabled(!isScheduled || isFuture)
-            .accessibilityLabel(day.formatted(.dateTime.weekday(.wide).month().day()))
+            .accessibilityLabel(day.formatted(.dateTime.weekday(.wide).month().day().locale(.app)))
             .accessibilityValue(isDone ? "Done" : (isScheduled ? "Not done" : "Not scheduled"))
         }
         .padding(.horizontal, 3)

@@ -193,7 +193,7 @@ private struct ParsedTokensRow: View {
                 chip(DayFormatting.relativeTitle(for: day), systemImage: "calendar")
             }
             if let start = input.start {
-                chip(start.formatted(date: .omitted, time: .shortened), systemImage: "clock")
+                chip(start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)), systemImage: "clock")
             }
             if let duration = input.duration {
                 chip(LauncherFormatting.duration(duration), systemImage: "hourglass")
@@ -305,9 +305,9 @@ private struct LauncherRowView: View {
 
     private var title: String {
         switch row {
-        case .newTask(let input): "New Task: \(input.title)"
-        case .newEvent(let input): "New Event: \(input.title)"
-        case .existing(let task): task.title.isEmpty ? "Untitled" : task.title
+        case .newTask(let input): String(appLocalized: "New Task: \(input.title)")
+        case .newEvent(let input): String(appLocalized: "New Event: \(input.title)")
+        case .existing(let task): task.title.isEmpty ? String(appLocalized: "Untitled") : task.title
         }
     }
 
@@ -315,17 +315,17 @@ private struct LauncherRowView: View {
         switch row {
         case .newTask(let input):
             if let start = input.start {
-                return "Scheduled \(LauncherFormatting.dayAndTime(start))"
+                return String(appLocalized: "Scheduled \(LauncherFormatting.dayAndTime(start))")
             }
-            return input.day.map { "Due \(DayFormatting.relativeTitle(for: $0))" } ?? "Inbox"
+            return input.day.map { String(appLocalized: "Due \(DayFormatting.relativeTitle(for: $0))") } ?? String(appLocalized: "Inbox")
         case .newEvent(let input):
             guard let day = input.day else { return nil }
-            guard let start = input.start else { return "All day, \(DayFormatting.relativeTitle(for: day))" }
+            guard let start = input.start else { return String(appLocalized: "All day, \(DayFormatting.relativeTitle(for: day))") }
             let end = start.addingTimeInterval(input.duration ?? LauncherInput.defaultEventDuration)
-            return "\(LauncherFormatting.dayAndTime(start)) – \(end.formatted(date: .omitted, time: .shortened))"
+            return "\(LauncherFormatting.dayAndTime(start)) – \(end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)))"
         case .existing(let task):
             if let start = task.scheduledStart { return LauncherFormatting.dayAndTime(start) }
-            return task.dueDate.map { "Due \(DayFormatting.relativeTitle(for: $0))" }
+            return task.dueDate.map { String(appLocalized: "Due \(DayFormatting.relativeTitle(for: $0))") }
         }
     }
 
@@ -337,11 +337,11 @@ private struct LauncherRowView: View {
 
 private enum LauncherFormatting {
     static func dayAndTime(_ date: Date) -> String {
-        "\(DayFormatting.relativeTitle(for: date)), \(date.formatted(date: .omitted, time: .shortened))"
+        "\(DayFormatting.relativeTitle(for: date)), \(date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app)))"
     }
 
     static func duration(_ seconds: TimeInterval) -> String {
-        Duration.seconds(seconds).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
+        Duration.seconds(seconds).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated).locale(.app))
     }
 }
 

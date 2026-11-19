@@ -7,16 +7,17 @@ import SwiftUI
 /// System Settings accent instead of the theme's.
 struct SettingsView: View {
     enum Tab: String, CaseIterable, Identifiable {
-        case appearance, shortcuts, notifications, videoCalls, iCloud
+        case appearance, language, shortcuts, notifications, videoCalls, iCloud
 
         var id: Self { self }
 
         var title: String {
             switch self {
-            case .appearance: "Appearance"
-            case .shortcuts: "Shortcuts"
-            case .notifications: "Notifications"
-            case .videoCalls: "Video Calls"
+            case .appearance: String(appLocalized: "Appearance")
+            case .language: String(appLocalized: "Language")
+            case .shortcuts: String(appLocalized: "Shortcuts")
+            case .notifications: String(appLocalized: "Notifications")
+            case .videoCalls: String(appLocalized: "Video Calls")
             case .iCloud: "iCloud"
             }
         }
@@ -24,6 +25,7 @@ struct SettingsView: View {
         var symbol: String {
             switch self {
             case .appearance: "paintbrush"
+            case .language: "globe"
             case .shortcuts: "keyboard"
             case .notifications: "bell"
             case .videoCalls: "video"
@@ -61,6 +63,7 @@ struct SettingsView: View {
         Group {
             switch selection {
             case .appearance: ThemeSettingsSection()
+            case .language: LanguageSettingsSection()
             case .shortcuts: ShortcutSettingsSection()
             case .notifications: ReminderSettingsSection()
             case .videoCalls: VideoCallSettingsSection()
@@ -149,7 +152,7 @@ private struct SyncSettingsSection: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if let lastSynced = syncStatus.lastSynced {
-                        Text("Last synced \(lastSynced.formatted(date: .abbreviated, time: .shortened))")
+                        Text("Last synced \(lastSynced.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(.app)))")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }

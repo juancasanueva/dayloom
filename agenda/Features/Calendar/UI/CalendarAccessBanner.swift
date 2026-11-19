@@ -30,7 +30,7 @@ struct CalendarAccessBanner: View {
         }
     }
 
-    private func banner(icon: String, message: String, action: String, perform: @escaping () -> Void) -> some View {
+    private func banner(icon: String, message: LocalizedStringKey, action: LocalizedStringKey, perform: @escaping () -> Void) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)

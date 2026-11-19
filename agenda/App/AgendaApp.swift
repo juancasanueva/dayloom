@@ -58,6 +58,7 @@ struct AgendaApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .appLanguage()
                 .environment(appState)
                 .environment(calendarModel)
                 .themedAppearance()
@@ -76,6 +77,7 @@ struct AgendaApp: App {
 
         Settings {
             SettingsView()
+                .appLanguage()
                 .environment(syncStatus)
         }
     }
@@ -106,44 +108,49 @@ struct AgendaApp: App {
     }
 }
 
+/// The menus Dayloom adds. Their titles are built in the app language, and reading it here
+/// redraws them when it changes; the menus macOS draws follow from the next launch.
 private struct PlannerCommands: Commands {
     let appState: AppState
+    private let language = LanguageStore.shared
 
     var body: some Commands {
+        // Read for its observation only: the titles below resolve through AppLocalization.
+        let _ = language.language
         CommandGroup(replacing: .appInfo) {
-            Button("About Dayloom") { AboutCredits.showAboutPanel() }
+            Button(String(appLocalized: "About Dayloom")) { AboutCredits.showAboutPanel() }
         }
 
         CommandGroup(replacing: .newItem) {
-            Button("New Task") { appState.requestQuickAdd() }
+            Button(String(appLocalized: "New Task")) { appState.requestQuickAdd() }
                 .keyboardShortcut(for: .newTask)
-            Button("New Note") { appState.requestNewNote() }
+            Button(String(appLocalized: "New Note")) { appState.requestNewNote() }
                 .keyboardShortcut(for: .newNote)
-            Button("Quick Launcher") { appState.isLauncherPresented.toggle() }
+            Button(String(appLocalized: "Quick Launcher")) { appState.isLauncherPresented.toggle() }
                 .keyboardShortcut(for: .quickLauncher)
         }
 
         CommandGroup(after: .sidebar) {
-            Button(appState.isInspectorPresented ? "Hide Inspector" : "Show Inspector") {
+            Button(appState.isInspectorPresented ? String(appLocalized: "Hide Inspector") : String(appLocalized: "Show Inspector")) {
                 appState.isInspectorPresented.toggle()
             }
             .keyboardShortcut(for: .toggleInspector)
         }
 
-        CommandMenu("Go") {
-            Button("Calendar") { appState.selection = .calendar }
+        CommandMenu(String(appLocalized: "Go")) {
+            Button(String(appLocalized: "Calendar")) { appState.selection = .calendar }
                 .keyboardShortcut(for: .goCalendar)
-            Button("Inbox") { appState.selection = .tasks(.inbox) }
+            Button(String(appLocalized: "Inbox")) { appState.selection = .tasks(.inbox) }
                 .keyboardShortcut(for: .goInbox)
-            Button("Today") { appState.selection = .tasks(.today) }
+            Button(String(appLocalized: "Today")) { appState.selection = .tasks(.today) }
                 .keyboardShortcut(for: .goToday)
-            Button("Upcoming") { appState.selection = .tasks(.upcoming) }
+            Button(String(appLocalized: "Upcoming")) { appState.selection = .tasks(.upcoming) }
                 .keyboardShortcut(for: .goUpcoming)
-            Button("Completed") { appState.selection = .tasks(.completed) }
+            Button(String(appLocalized: "Completed")) { appState.selection = .tasks(.completed) }
                 .keyboardShortcut(for: .goCompleted)
-            Button("Habits") { appState.selection = .habits }
+            Button(String(appLocalized: "Habits")) { appState.selection = .habits }
                 .keyboardShortcut(for: .goHabits)
-            Button("Notes") { appState.selection = .notes }
+            Button(String(appLocalized: "Notes")) { appState.selection = .notes }
                 .keyboardShortcut(for: .goNotes)
         }
     }

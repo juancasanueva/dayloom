@@ -13,8 +13,8 @@ enum TaskLayout: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .list: "List"
-        case .board: "Board"
+        case .list: String(appLocalized: "List")
+        case .board: String(appLocalized: "Board")
         }
     }
 

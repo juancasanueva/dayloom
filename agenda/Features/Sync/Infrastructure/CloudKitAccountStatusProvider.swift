@@ -41,7 +41,7 @@ final class CloudKitAccountStatusProvider: AccountStatusProvider {
                     guard let event = notification.userInfo?[key] as? NSPersistentCloudKitContainer.Event else { continue }
                     continuation.yield(SyncEvent(
                         endDate: event.endDate,
-                        errorDescription: event.succeeded ? nil : (event.error?.localizedDescription ?? "Sync failed."),
+                        errorDescription: event.succeeded ? nil : (event.error?.localizedDescription ?? String(appLocalized: "Sync failed.")),
                         kind: Self.kind(of: event)
                     ))
                 }

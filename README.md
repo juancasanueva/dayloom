@@ -26,6 +26,7 @@ Or download `Dayloom-<version>.zip` from the [latest release](https://github.com
 - **Habits**: daily habits with streaks, plus recurring tasks.
 - **Notes**: block-based notes with headings, lists, checklists, tasks (new ones or existing ones you search for), calendar events and images (pick, paste or drag them in), plus a daily note.
 - **Appearance**: light, dark or system appearance, with a choice of color themes, including Catppuccin, Nord, Dracula, Solarized, Gruvbox, Tokyo Night and Rosé Pine.
+- **Languages**: English, Spanish, French, German, Italian, Portuguese (Portugal), Japanese, Korean and Simplified Chinese. Dayloom follows your Mac's language until you pick a flag in Settings → Language, which switches the windows at once; the menus macOS draws follow from the next launch.
 - **iCloud sync**: all data syncs through your private iCloud database. Settings (⌘,) shows the sync status.
 
 ## Screenshots

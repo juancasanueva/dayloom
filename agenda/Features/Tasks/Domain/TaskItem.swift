@@ -10,9 +10,9 @@ enum TaskStatus: String, CaseIterable, Codable, Identifiable {
 
     var title: String {
         switch self {
-        case .todo: "To Do"
-        case .inProgress: "In Progress"
-        case .done: "Done"
+        case .todo: String(appLocalized: "To Do")
+        case .inProgress: String(appLocalized: "In Progress")
+        case .done: String(appLocalized: "Done")
         }
     }
 }
@@ -27,10 +27,10 @@ enum TaskPriority: Int, CaseIterable, Codable, Comparable, Identifiable {
 
     var title: String {
         switch self {
-        case .none: "None"
-        case .low: "Low"
-        case .medium: "Medium"
-        case .high: "High"
+        case .none: String(appLocalized: "None")
+        case .low: String(appLocalized: "Low")
+        case .medium: String(appLocalized: "Medium")
+        case .high: String(appLocalized: "High")
         }
     }
 

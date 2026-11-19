@@ -15,7 +15,7 @@ enum ReminderLead: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .atStart: "At start time"
+        case .atStart: String(appLocalized: "At start time")
         case .fiveMinutes: "5 minutes before"
         case .fifteenMinutes: "15 minutes before"
         case .thirtyMinutes: "30 minutes before"
@@ -62,7 +62,7 @@ struct ReminderPlanner {
 
     var now: Date = .now
     var calendar: Calendar = .current
-    var locale: Locale = .current
+    var locale: Locale = .app
 
     func plan(_ candidates: [ReminderCandidate], settings: ReminderSettings) -> [PlannedReminder] {
         guard settings.isEnabled else { return [] }
@@ -73,7 +73,7 @@ struct ReminderPlanner {
             return PlannedReminder(
                 id: Self.identifierPrefix + candidate.key,
                 taskKey: candidate.key,
-                title: candidate.title.isEmpty ? "Untitled" : candidate.title,
+                title: candidate.title.isEmpty ? String(appLocalized: "Untitled") : candidate.title,
                 body: body,
                 fireDate: fireDate
             )
@@ -86,12 +86,13 @@ struct ReminderPlanner {
         if let start = candidate.scheduledStart {
             let fireDate = start.addingTimeInterval(-settings.lead.interval)
             let time = start.formatted(timeStyle)
-            let body = calendar.isDate(fireDate, inSameDayAs: start) ? "Starts at \(time)" : "Starts tomorrow at \(time)"
+            let body = calendar.isDate(fireDate, inSameDayAs: start)
+                ? String(appLocalized: "Starts at \(time)") : String(appLocalized: "Starts tomorrow at \(time)")
             return (fireDate, body)
         }
         if let due = candidate.dueDate {
             let fireDate = calendar.startOfDay(for: due).addingTimeInterval(TimeInterval(settings.allDayMinutes) * 60)
-            return (fireDate, "Due today")
+            return (fireDate, String(appLocalized: "Due today"))
         }
         return nil
     }

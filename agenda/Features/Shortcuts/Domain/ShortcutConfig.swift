@@ -37,7 +37,7 @@ struct ShortcutConfig: Equatable {
 
             if line.hasPrefix("[") {
                 if line != "[shortcuts]" {
-                    config.issues.append(ShortcutIssue(line: number, message: "Line \(number): \(line) isn't a section Dayloom knows; the lines after it are still read as shortcuts."))
+                    config.issues.append(ShortcutIssue(line: number, message: String(appLocalized: "Line \(number): \(line) isn't a section Dayloom knows; the lines after it are still read as shortcuts.")))
                 }
                 continue
             }
@@ -53,27 +53,27 @@ struct ShortcutConfig: Equatable {
                 continue
             }
             guard let action = ShortcutAction(rawValue: name) else {
-                config.issues.append(ShortcutIssue(line: number, message: "Line \(number): \(name) isn't a Dayloom action."))
+                config.issues.append(ShortcutIssue(line: number, message: String(appLocalized: "Line \(number): \(name) isn't a Dayloom action.")))
                 continue
             }
-            let keeping = "keeping \(action.defaultShortcut.displayText)"
+            let keeping = action.defaultShortcut.displayText
             guard let shortcut = Shortcut(parsing: value) else {
-                config.issues.append(ShortcutIssue(line: number, message: "Line \(number): \"\(value)\" for \(name) isn't a shortcut Dayloom understands; \(keeping)."))
+                config.issues.append(ShortcutIssue(line: number, message: String(appLocalized: "Line \(number): \"\(value)\" for \(name) isn't a shortcut Dayloom understands; keeping \(keeping).")))
                 continue
             }
             if action.isSystemWide {
                 guard !shortcut.modifiers.isEmpty, shortcut.modifiers != .shift else {
-                    config.issues.append(ShortcutIssue(line: number, message: "Line \(number): \(name) works in every app, so it needs cmd, ctrl or option; \(keeping)."))
+                    config.issues.append(ShortcutIssue(line: number, message: String(appLocalized: "Line \(number): \(name) works in every app, so it needs cmd, ctrl or option; keeping \(keeping).")))
                     continue
                 }
             } else {
                 guard !shortcut.modifiers.isDisjoint(with: [.command, .control]) else {
-                    config.issues.append(ShortcutIssue(line: number, message: "Line \(number): \(name) needs ⌘ or ⌃ so it doesn't take over typing; \(keeping)."))
+                    config.issues.append(ShortcutIssue(line: number, message: String(appLocalized: "Line \(number): \(name) needs ⌘ or ⌃ so it doesn't take over typing; keeping \(keeping).")))
                     continue
                 }
             }
             if let earlier = setOnLine[action] {
-                config.issues.append(ShortcutIssue(line: number, message: "Line \(number): \(name) is already set on line \(earlier); this line wins."))
+                config.issues.append(ShortcutIssue(line: number, message: String(appLocalized: "Line \(number): \(name) is already set on line \(earlier); this line wins.")))
             }
             setOnLine[action] = number
             config.overrides[action] = shortcut
@@ -84,14 +84,14 @@ struct ShortcutConfig: Equatable {
         for action in ShortcutAction.allCases {
             let shortcut = config.shortcut(for: action)
             guard let sharing = byShortcut[shortcut], sharing.count > 1, sharing.first == action else { continue }
-            let names = sharing.map(\.rawValue).joined(separator: " and ")
-            config.issues.append(ShortcutIssue(line: nil, message: "\(names) both use \(shortcut.displayText); only one of them will work."))
+            let names = sharing.map(\.rawValue).formatted(.list(type: .and).locale(.app))
+            config.issues.append(ShortcutIssue(line: nil, message: String(appLocalized: "\(names) both use \(shortcut.displayText); only one of them will work.")))
         }
         return config
     }
 
     private static func malformed(_ number: Int) -> ShortcutIssue {
-        ShortcutIssue(line: number, message: "Line \(number) isn't in the form action = \"keys\".")
+        ShortcutIssue(line: number, message: String(appLocalized: "Line \(number) isn't in the form action = \"keys\"."))
     }
 
     /// Drops a `#` comment that isn't inside quotes.
@@ -121,6 +121,7 @@ struct ShortcutConfig: Equatable {
     // MARK: Writing
 
     /// The keys.toml Dayloom writes the first time: every action at its default, with what it does.
+    /// In English whatever the app language, like the action names it explains.
     static func defaultFileText() -> String {
         var lines = [
             "# Dayloom keyboard shortcuts",
@@ -141,7 +142,7 @@ struct ShortcutConfig: Equatable {
             for action in ShortcutAction.allCases where action.group == group {
                 let setting = "\(action.rawValue) = \"\(action.defaultShortcut.tomlValue)\""
                 let padding = String(repeating: " ", count: width - setting.count + 2)
-                lines.append(setting + padding + "# " + action.summary)
+                lines.append(setting + padding + "# " + action.summary(bundle: AppLocalization.bundle(for: .english)))
             }
         }
         return lines.joined(separator: "\n") + "\n"

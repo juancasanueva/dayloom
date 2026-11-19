@@ -50,23 +50,23 @@ extension EntryTint {
 enum DayFormatting {
     /// "Today", "Tomorrow", "Yesterday", or a short date such as "Thu, Nov 20".
     static func relativeTitle(for date: Date, calendar: Calendar = .current) -> String {
-        if calendar.isDateInToday(date) { return "Today" }
-        if calendar.isDateInTomorrow(date) { return "Tomorrow" }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
-        return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+        if calendar.isDateInToday(date) { return String(appLocalized: "Today") }
+        if calendar.isDateInTomorrow(date) { return String(appLocalized: "Tomorrow") }
+        if calendar.isDateInYesterday(date) { return String(appLocalized: "Yesterday") }
+        return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().locale(.app))
     }
 
     /// "Today", "Tomorrow", or the full weekday name, for the day column of a list.
-    static func dayName(for date: Date, now: Date = .now, calendar: Calendar = .current, locale: Locale = .current) -> String {
-        if calendar.isDate(date, inSameDayAs: now) { return "Today" }
+    static func dayName(for date: Date, now: Date = .now, calendar: Calendar = .current, locale: Locale = .app) -> String {
+        if calendar.isDate(date, inSameDayAs: now) { return String(appLocalized: "Today") }
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
-            return "Tomorrow"
+            return String(appLocalized: "Tomorrow")
         }
         return date.formatted(Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).weekday(.wide))
     }
 
     /// Day and short month, such as "19 Nov", shown under the day name.
-    static func shortDate(for date: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+    static func shortDate(for date: Date, calendar: Calendar = .current, locale: Locale = .app) -> String {
         date.formatted(Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).day().month(.abbreviated))
     }
 }

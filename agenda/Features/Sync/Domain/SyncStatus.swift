@@ -25,9 +25,9 @@ enum SyncStatus: Equatable {
 
     var title: String {
         switch self {
-        case .checking: "Checking iCloud…"
-        case .on: "Syncing with iCloud"
-        case .signedOut: "Not signed in to iCloud"
+        case .checking: String(appLocalized: "Checking iCloud…")
+        case .on: String(appLocalized: "Syncing with iCloud")
+        case .signedOut: String(appLocalized: "Not signed in to iCloud")
         case .restricted: "iCloud is restricted"
         case .unavailable: "iCloud is unavailable"
         case .problem: "iCloud sync hit a problem"
@@ -37,12 +37,12 @@ enum SyncStatus: Equatable {
 
     var detail: String {
         switch self {
-        case .checking: "Looking up your iCloud account."
-        case .on: "Your tasks, notes, and habits stay up to date on every Mac signed in to this iCloud account."
-        case .signedOut: "Sign in to iCloud in System Settings to sync. Until then, everything stays on this Mac."
-        case .restricted: "This Mac's settings don't allow iCloud for Dayloom. Your data stays on this Mac."
-        case .unavailable: "Dayloom syncs again once iCloud is reachable. Your changes are kept on this Mac."
-        case .problem: "Your changes are kept on this Mac, and Dayloom keeps retrying."
+        case .checking: String(appLocalized: "Looking up your iCloud account.")
+        case .on: String(appLocalized: "Your tasks, notes, and habits stay up to date on every Mac signed in to this iCloud account.")
+        case .signedOut: String(appLocalized: "Sign in to iCloud in System Settings to sync. Until then, everything stays on this Mac.")
+        case .restricted: String(appLocalized: "This Mac's settings don't allow iCloud for Dayloom. Your data stays on this Mac.")
+        case .unavailable: String(appLocalized: "Dayloom syncs again once iCloud is reachable. Your changes are kept on this Mac.")
+        case .problem: String(appLocalized: "Your changes are kept on this Mac, and Dayloom keeps retrying.")
         case .localOnly: "iCloud couldn't start when Dayloom opened, so changes stay on this Mac. Quit and reopen Dayloom to try again."
         }
     }

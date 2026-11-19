@@ -25,7 +25,7 @@ final class EventKitCalendarSource: CalendarEventSource {
         return store.events(matching: predicate).map { event in
             CalendarEntry(
                 id: "event-\(event.calendarItemIdentifier)-\(Int(event.startDate.timeIntervalSince1970))",
-                title: event.title?.isEmpty == false ? event.title : "Untitled Event",
+                title: event.title?.isEmpty == false ? event.title : String(appLocalized: "Untitled Event"),
                 start: event.startDate,
                 end: event.endDate,
                 isAllDay: event.isAllDay,

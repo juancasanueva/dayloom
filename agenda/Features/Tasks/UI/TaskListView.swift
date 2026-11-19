@@ -54,7 +54,7 @@ struct TaskListView: View {
     // MARK: Pages
 
     private func header(_ tasks: [TaskItem]) -> some View {
-        PageHeader(title, subtitle: TaskListHeading.subtitle(for: scope, count: tasks.count)) {
+        PageHeader(verbatim: title, subtitle: TaskListHeading.subtitle(for: scope, count: tasks.count)) {
             if scope != .completed {
                 layoutPicker
             }
@@ -242,20 +242,20 @@ struct TaskListView: View {
 
     private var title: String {
         switch scope {
-        case .inbox: "Inbox"
-        case .today: "Today"
-        case .upcoming: "Upcoming"
-        case .completed: "Completed"
-        case .tag: scopeTag?.name ?? "Tag"
+        case .inbox: String(appLocalized: "Inbox")
+        case .today: String(appLocalized: "Today")
+        case .upcoming: String(appLocalized: "Upcoming")
+        case .completed: String(appLocalized: "Completed")
+        case .tag: scopeTag?.name ?? String(appLocalized: "Tag")
         }
     }
 
     private var quickAddPlaceholder: String {
         switch scope {
-        case .today: "Add a task for today"
-        case .upcoming: "Add a task for tomorrow"
-        case .tag: "Add a task tagged \(scopeTag?.name ?? "")"
-        case .inbox, .completed: "Add a task"
+        case .today: String(appLocalized: "Add a task for today")
+        case .upcoming: String(appLocalized: "Add a task for tomorrow")
+        case .tag: String(appLocalized: "Add a task tagged \(scopeTag?.name ?? "")")
+        case .inbox, .completed: String(appLocalized: "Add a task")
         }
     }
 

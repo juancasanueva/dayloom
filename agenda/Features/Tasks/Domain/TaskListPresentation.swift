@@ -38,7 +38,7 @@ enum TaskListHeading {
         count: Int,
         now: Date = .now,
         calendar: Calendar = .current,
-        locale: Locale = .current
+        locale: Locale = .app
     ) -> String {
         switch scope {
         case .today:
@@ -46,17 +46,13 @@ enum TaskListHeading {
             style = style.weekday(.wide).day().month(.wide)
             return now.formatted(style)
         case .inbox:
-            return count == 0 ? "Nothing waiting" : "\(tasks(count)) without a date"
+            return count == 0 ? String(appLocalized: "Nothing waiting") : String(appLocalized: "\(count) tasks without a date")
         case .upcoming:
-            return count == 0 ? "Nothing planned" : "\(tasks(count)) ahead"
+            return count == 0 ? String(appLocalized: "Nothing planned") : String(appLocalized: "\(count) tasks ahead")
         case .completed:
-            return count == 0 ? "Nothing yet" : "\(count) finished"
+            return count == 0 ? String(appLocalized: "Nothing yet") : String(appLocalized: "\(count) finished")
         case .tag:
-            return count == 0 ? "No open tasks" : "\(count) open \(count == 1 ? "task" : "tasks")"
+            return count == 0 ? String(appLocalized: "No open tasks") : String(appLocalized: "\(count) open tasks")
         }
-    }
-
-    private static func tasks(_ count: Int) -> String {
-        "\(count) \(count == 1 ? "task" : "tasks")"
     }
 }
