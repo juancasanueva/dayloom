@@ -75,6 +75,10 @@ final class TaskItem {
     @Relationship(deleteRule: .nullify, inverse: \NoteBlock.task)
     var noteBlocks: [NoteBlock]? = []
 
+    /// Notes linked to this task by hand. Deleting either side removes only the link.
+    @Relationship(inverse: \Note.linkedTasks)
+    var linkedNotes: [Note]? = []
+
     init(
         title: String,
         dueDate: Date? = nil,

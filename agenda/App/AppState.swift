@@ -32,6 +32,12 @@ final class AppState {
         isInspectorPresented = id != nil
     }
 
+    /// Shows a note in Notes. Leaving the current view drops the selected task.
+    func open(note id: PersistentIdentifier) {
+        selection = .notes
+        selectedNoteID = id
+    }
+
     func requestNewNote() {
         selection = .notes
         pendingNewNote = true

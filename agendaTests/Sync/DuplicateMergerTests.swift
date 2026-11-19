@@ -93,6 +93,29 @@ struct DuplicateMergerTests {
         #expect(report.dailyNotes == 1)
     }
 
+    @Test func mergedDailyNoteKeepsItsLinkedTasks() throws {
+        let context = try makeInMemoryContext()
+        let day = TestClock.date(2026, 11, 17)
+        let oldest = makeDailyNote(day, createdAt: TestClock.date(2026, 11, 17, 7), blocks: [], in: context)
+        let copy = makeDailyNote(day, createdAt: TestClock.date(2026, 11, 17, 8), blocks: [], in: context)
+        let onCopy = TaskItem(title: "Pay rent")
+        let onBoth = TaskItem(title: "Call mom")
+        context.insert(onCopy)
+        context.insert(onBoth)
+        onCopy.link(copy)
+        onBoth.link(oldest)
+        onBoth.link(copy)
+        try context.save()
+
+        merger.mergeDuplicates(in: context)
+        try context.save()
+
+        #expect(try context.fetch(FetchDescriptor<Note>()).count == 1)
+        #expect(onCopy.linkedNotes?.map(\.mergeKey) == [oldest.mergeKey])
+        #expect(onBoth.linkedNotes?.map(\.mergeKey) == [oldest.mergeKey])
+        #expect(oldest.linkedTasks?.count == 2)
+    }
+
     @Test func mergedTaskBlockKeepsItsTask() throws {
         let context = try makeInMemoryContext()
         let day = TestClock.date(2026, 11, 17)

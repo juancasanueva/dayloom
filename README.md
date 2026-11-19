@@ -18,7 +18,7 @@ Or download `Dayloom-<version>.zip` from the [latest release](https://github.com
 
 ## Features
 
-- **Tasks**: Inbox, Today, Upcoming and Completed lists, tags, and a status board.
+- **Tasks**: Inbox, Today, Upcoming and Completed lists, tags, and a status board. Link notes to a task from its details; they're listed there with the notes that contain the task, one click away.
 - **Calendar**: day, week and month views with your calendar events next to your scheduled tasks. Double-click or right-click an empty slot to create a task there.
 - **Video calls**: give a task a meeting link and join it with one click. Dayloom recognizes Google Meet, Zoom, Teams and Webex links, opens Zoom and Teams meetings in their apps when installed, and offers Join on calendar events that mention a meeting. It can also create a Google Meet or Zoom meeting for a task, or open Teams to make one.
 - **Reminders**: a notification before a task starts, or on the day it's due.
