@@ -1,0 +1,66 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSCalendarsFullAccessUsageDescription" : {
+      "comment" : "Why Dayloom asks for calendar access, shown in the system prompt.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dayloom zeigt deine Kalenderereignisse neben deinen Aufgaben an."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Dayloom shows your calendar events next to your tasks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dayloom muestra los eventos de tu calendario junto a tus tareas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dayloom affiche les événements de votre calendrier à côté de vos tâches."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dayloom mostra gli eventi del tuo calendario accanto alle tue attività."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dayloomは、カレンダーのイベントをタスクと並べて表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dayloom은 캘린더 이벤트를 할 일과 함께 표시합니다."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Dayloom mostra os eventos do teu calendário junto às tuas tarefas."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dayloom 会在你的任务旁显示日历事件。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
