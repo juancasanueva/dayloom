@@ -17,8 +17,8 @@ User request (L1): "I have added 9 flag images to the assets. In the settings ad
 |----|-------|-------|--------|--------|
 | T1 | S1, S2 | inline | done (AppLanguage, AppLocalization, LanguageStore, Language tab, `appLanguage()` on both scenes, menus) | dc549b5 |
 | T2 | S3 | inline (code: make String-typed UI text localizable) | done (328 keys; dates in `Locale.app`) | dc549b5 |
-| T3 | S3 | delegated (4 parallel translators, 2 languages each, merged inline) | done (8 × 324 keys, placeholders validated) | df6c114 |
-| T4 | S1–S3 | inline (tests, README) | done | df6c114 |
+| T3 | S3 | delegated (4 parallel translators, 2 languages each, merged inline) | done (8 × 324 keys, placeholders validated) | f1da13f |
+| T4 | S1–S3 | inline (tests, README) | done | f1da13f |
 
 ## Log
 
@@ -26,3 +26,4 @@ User request (L1): "I have added 9 flag images to the assets. In the settings ad
 - L2 Matchday: `AppLanguage` (9 cases, `.lproj` raw values, flag asset, native name, `matching(_:)`), `AppLocalization` (bundle of the chosen `.lproj` for strings built outside SwiftUI, `String(appLocalized:)`), `\.locale` on the SwiftUI roots, `LanguageCard` (3 × 3 flag grid). Dayloom has no string catalog yet; a build extracts 185 SwiftUI literals, and ~150 more UI strings are `String`-typed (enum titles, helpers) and render verbatim. Dates use `.formatted()` (process locale), so they need the app locale passed to switch at once.
 - L3 Decisions: the whole window tree is re-identified on a language change (`.id(language)`) so text built in code redraws; model state lives in the environment and survives. keys.toml keeps English comments (`summary(bundle:)` with the English bundle). Composite phrases replaced by whole ones where languages inflect ("Previous Day/Week/Month", "Repeats every day"). Plurals use catalog plural variations. Launcher input parsing (today, tomorrow, next week) stays English: it is input syntax, not drawn text. `InfoPlist.xcstrings` translates the calendar permission prompt.
 - L4 Verification: `xcodebuild test -only-testing:agendaTests` passed 382 tests in 43 suites, the new Localization suites among them (every language carries every key, placeholders match, plurals, keys.toml stays English, store saves and applies the pick). The existing English assertions still pass. Running the app to check visually did not work: the window opened on another Space and no screenshot was taken. Review assessment: medium, not due (under_budget). Next: the user tries the Language tab; PR strategy is the user's call.
+- L5 (2026-11-19) User, after running the Debug build: "it works, push and open a PR". Delivered as a single PR (the user's choice) holding dc549b5, f1da13f and this log entry.
